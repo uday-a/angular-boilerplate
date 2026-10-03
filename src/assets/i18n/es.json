@@ -1,0 +1,216 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Bienvenido de nuevo",
+      "description": "Inicia sesión en tu cuenta para continuar",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@empresa.com",
+      "passwordLabel": "Contraseña",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "rememberMe": "Recuérdame durante 30 días",
+      "submit": "Iniciar sesión",
+      "orContinueWith": "o continúa con",
+      "noAccount": "¿No tienes una cuenta?",
+      "signUpLink": "Regístrate"
+    },
+    "signUp": {
+      "title": "Crea tu cuenta",
+      "description": "Empieza tu prueba gratuita de 14 días. No se requiere tarjeta de crédito.",
+      "nameLabel": "Nombre completo",
+      "emailLabel": "Correo electrónico",
+      "emailPlaceholder": "tu@empresa.com",
+      "passwordLabel": "Contraseña",
+      "passwordHint": "8+ caracteres, mezcla de letras, números y símbolos.",
+      "confirmLabel": "Confirmar contraseña",
+      "passwordsMismatch": "Las contraseñas no coinciden.",
+      "agreePrefix": "Acepto los",
+      "termsLink": "Términos del servicio",
+      "agreeJoiner": "y la",
+      "privacyLink": "Política de privacidad",
+      "submit": "Crear cuenta",
+      "orContinueWith": "o continúa con",
+      "hasAccount": "¿Ya tienes una cuenta?",
+      "signInLink": "Inicia sesión"
+    },
+    "passwordReset": {
+      "srTitle": "Restablecer contraseña",
+      "request": {
+        "title": "¿Olvidaste tu contraseña?",
+        "description": "Introduce tu correo y te enviaremos un enlace de restablecimiento.",
+        "emailLabel": "Correo electrónico",
+        "emailPlaceholder": "tu@empresa.com",
+        "submit": "Enviar enlace",
+        "back": "Volver a iniciar sesión"
+      },
+      "sent": {
+        "title": "Revisa tu bandeja de entrada",
+        "descriptionPrefix": "Hemos enviado un enlace de restablecimiento a",
+        "descriptionSuffix": ".",
+        "openDemo": "Abrir formulario (demo)",
+        "wrongEmail": "¿Correo equivocado?"
+      },
+      "reset": {
+        "title": "Establece una nueva contraseña",
+        "description": "Elige una contraseña fuerte que no hayas usado antes.",
+        "passwordLabel": "Nueva contraseña",
+        "confirmLabel": "Confirmar contraseña",
+        "passwordsMismatch": "Las contraseñas no coinciden.",
+        "submit": "Restablecer contraseña"
+      },
+      "done": {
+        "title": "Todo listo",
+        "description": "Tu contraseña ha sido actualizada. Ya puedes iniciar sesión con la nueva.",
+        "submit": "Continuar a iniciar sesión"
+      }
+    },
+    "mfa": {
+      "title": "Verificación en dos pasos",
+      "description": "Introduce el código de 6 dígitos de tu app de autenticación.",
+      "verifying": "Verificando…",
+      "invalidCode": "Código no válido. Prueba {{code}} para la demo.",
+      "resend": "Reenviar código",
+      "resendCooldown": "Reenviar disponible en {{seconds}}s",
+      "lostDevicePrefix": "¿Perdiste tu dispositivo?",
+      "recoveryLink": "Usa un código de recuperación",
+      "verifiedTitle": "Verificado",
+      "verifiedDescription": "Todo listo. Continuando a tu panel…",
+      "continue": "Continuar"
+    }
+  },
+  "nav": {
+    "groups": {
+      "platform": "Plataforma",
+      "projects": "Proyectos",
+      "teams": "Equipos"
+    },
+    "actions": {
+      "toggle": "Alternar",
+      "more": "Más",
+      "addTeam": "Añadir equipo",
+      "viewProject": "Ver proyecto",
+      "shareProject": "Compartir proyecto",
+      "deleteProject": "Eliminar proyecto"
+    },
+    "user": {
+      "upgrade": "Mejorar a Pro",
+      "account": "Cuenta",
+      "billing": "Facturación",
+      "notifications": "Notificaciones",
+      "logout": "Cerrar sesión"
+    },
+    "items": {
+      "dashboard": "Panel",
+      "kanban": "Kanban",
+      "dataTable": "Tabla de datos",
+      "calendar": "Calendario",
+      "activity": "Actividad",
+      "uiKit": "Kit UI",
+      "forms": "Formularios",
+      "settings": "Ajustes",
+      "general": "General",
+      "account": "Cuenta",
+      "security": "Seguridad",
+      "notifications": "Notificaciones",
+      "integrations": "Integraciones",
+      "team": "Equipo",
+      "billing": "Facturación",
+      "limits": "Límites",
+      "support": "Soporte",
+      "feedback": "Comentarios",
+      "admin": "Admin",
+      "users": "Usuarios",
+      "roles": "Roles y permisos"
+    }
+  },
+  "admin": {
+    "title": "Usuarios",
+    "subtitle": "{{count}} usuarios registrados",
+    "user": "Usuario",
+    "role": "Rol",
+    "joined": "Registro",
+    "loading": "Cargando usuarios…",
+    "loadFailed": "No se pudieron cargar los usuarios. Inténtalo de nuevo.",
+    "empty": "Aún no hay usuarios.",
+    "forbidden": "No tienes permiso para ver esta página.",
+    "forbiddenRole": "Tu rol: {{role}} · Requerido: admin",
+    "forbiddenHelp": "Contacta con un administrador para obtener acceso.",
+    "roles": {
+      "description": "Decide qué puede ver y cambiar cada rol en el espacio de trabajo.",
+      "unsaved": "sin cambios | 1 cambio sin guardar | {{n}} cambios sin guardar",
+      "saved": "Guardado",
+      "discard": "Descartar",
+      "save": "Guardar cambios",
+      "demo": "Roles de ejemplo. Los cambios solo duran esta sesión.",
+      "locked": "Rol del sistema, no editable",
+      "members": "sin miembros | 1 miembro | {{n}} miembros",
+      "risky": "Permiso de alto riesgo",
+      "riskyHint": "Destructivo o sensible. Concédelo con cuidado.",
+      "matrix": {
+        "title": "Permisos",
+        "description": "Marca un grupo para conceder todo lo que incluye. El rol Owner siempre tiene acceso total.",
+        "search": "Filtrar permisos…",
+        "permission": "Permiso",
+        "groupAria": "Todos los permisos de {{group}} para {{role}}",
+        "emptyTitle": "Ningún permiso coincide",
+        "emptyDescription": "Prueba otra búsqueda."
+      },
+      "legend": {
+        "risky": "Alto riesgo",
+        "changed": "Cambio sin guardar",
+        "locked": "Rol del sistema bloqueado"
+      }
+    },
+    "everyone": "Todas las personas con cuenta en este espacio.",
+    "adminsOnly": "Solo administradores",
+    "loadFailedTitle": "No se pudieron cargar los usuarios",
+    "actions": "Acciones",
+    "noMatchTitle": "Ningún usuario coincide",
+    "noMatchDescription": "Prueba otra búsqueda, rol o rango de fechas.",
+    "roleNames": {
+      "admin": "Admin",
+      "editor": "Editor",
+      "user": "Miembro"
+    },
+    "filters": {
+      "search": "Buscar nombre o usuario…",
+      "role": "Filtrar por rol",
+      "allRoles": "Todos los roles",
+      "joined": "Alta en cualquier fecha",
+      "reset": "Restablecer",
+      "showing": "{{shown}} de {{total}}"
+    },
+    "menu": {
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "edit": {
+      "title": "Editar usuario",
+      "description": "Actualiza su nombre, usuario o rol.",
+      "name": "Nombre completo",
+      "username": "Usuario",
+      "save": "Guardar cambios",
+      "cancel": "Cancelar",
+      "required": "El nombre y el usuario son obligatorios."
+    },
+    "delete": {
+      "title": "¿Eliminar a {{name}}?",
+      "description": "Pierde el acceso a este espacio de inmediato. Puedes deshacerlo desde la notificación durante unos segundos.",
+      "confirm": "Eliminar usuario"
+    },
+    "toast": {
+      "updated": "{{name}} actualizado",
+      "deleted": "{{name}} eliminado",
+      "undo": "Deshacer",
+      "restored": "{{name}} restaurado"
+    },
+    "editFor": "Editar a {{name}}",
+    "deleteFor": "Eliminar a {{name}}"
+  },
+  "settings": {
+    "activity": {
+      "states": {
+        "retry": "Reintentar"
+      }
+    }
+  }
+}

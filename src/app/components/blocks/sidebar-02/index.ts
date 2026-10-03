@@ -1,0 +1,7 @@
+export { UiSidebar02Component } from './sidebar-02.component'
+export { TeamSwitcherComponent } from './team-switcher.component'
+export { NavMainComponent } from './nav-main.component'
+export { NavProjectsComponent } from './nav-projects.component'
+export { NavSecondaryComponent } from './nav-secondary.component'
+export { NavUserComponent, type SidebarTheme } from './nav-user.component'
+export type { SidebarNavItem, SidebarSubItem, SidebarProject, SidebarTeam, SidebarUser } from './sidebar-02.models'

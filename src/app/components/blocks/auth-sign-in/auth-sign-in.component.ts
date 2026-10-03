@@ -1,0 +1,174 @@
+// Full-page sign-in surface. Email + password + remember-me form, forgot-password and
+// sign-up links, optional GitHub/Google OAuth row. Port of the Vue/React block 1:1 —
+// emits `submit` with the form payload and `oauth` with the chosen provider; the consumer
+// wires the actual auth call. Link targets are configurable via props.
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core'
+import { Github, LucideAngularModule } from 'lucide-angular'
+import { cn } from '@/app/core/utils/cn'
+import { UiButtonComponent } from '@/app/components/ui/button/button.component'
+import {
+  UiCardComponent,
+  UiCardContentComponent,
+  UiCardDescriptionComponent,
+  UiCardFooterComponent,
+  UiCardHeaderComponent,
+  UiCardTitleComponent,
+} from '@/app/components/ui/card/card.component'
+import { UiCheckboxComponent } from '@/app/components/ui/checkbox/checkbox.component'
+import { UiInputComponent } from '@/app/components/ui/input/input.component'
+import { UiLabelComponent } from '@/app/components/ui/label/label.component'
+import { UiSeparatorComponent } from '@/app/components/ui/separator/separator.component'
+
+export type AuthSignInOauthProvider = 'github' | 'google'
+
+export interface AuthSignInPayload {
+  email: string
+  password: string
+  remember: boolean
+}
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  selector: 'ui-auth-sign-in, [ui-auth-sign-in]',
+  standalone: true,
+  // The block renders its own full-page root <div>: keep the host out of layout.
+  host: { '[attr.class]': '"contents"' },
+  imports: [
+    LucideAngularModule,
+    UiButtonComponent,
+    UiCardComponent,
+    UiCardContentComponent,
+    UiCardDescriptionComponent,
+    UiCardFooterComponent,
+    UiCardHeaderComponent,
+    UiCardTitleComponent,
+    UiCheckboxComponent,
+    UiInputComponent,
+    UiLabelComponent,
+    UiSeparatorComponent,
+  ],
+  template: `
+    <div data-slot="auth-sign-in" [class]="rootClass">
+      <div ui-card class="w-full max-w-sm">
+        <div ui-card-header class="text-center">
+          <h2 ui-card-title class="text-2xl">{{ title }}</h2>
+          <p ui-card-description>{{ description }}</p>
+        </div>
+        <div ui-card-content>
+          <form class="space-y-4" (submit)="onSubmit($event)">
+            <div class="grid gap-2">
+              <label ui-label for="signin-email">Email</label>
+              <ui-input
+                id="signin-email"
+                [value]="email()"
+                (valueChange)="email.set($event)"
+                type="email"
+                name="email"
+                placeholder="you@company.com"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="grid gap-2">
+              <div class="flex items-center justify-between">
+                <label ui-label for="signin-password">Password</label>
+                <a
+                  [href]="forgotPasswordHref"
+                  class="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </a>
+              </div>
+              <ui-input
+                id="signin-password"
+                [value]="password()"
+                (valueChange)="password.set($event)"
+                type="password"
+                name="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+            <div class="flex items-center gap-2">
+              <ui-checkbox id="signin-remember" [checked]="remember()" (checkedChange)="remember.set(!!$event)" />
+              <label ui-label for="signin-remember" class="text-sm font-normal">Remember me for 30 days</label>
+            </div>
+            <button ui-button type="submit" class="w-full">Sign in</button>
+          </form>
+
+          @if (oauthProviders.length > 0) {
+            <div class="my-6 flex items-center gap-3">
+              <ui-separator class="flex-1" />
+              <span class="text-muted-foreground text-xs uppercase">or continue with</span>
+              <ui-separator class="flex-1" />
+            </div>
+            <div class="grid gap-2" [class.sm:grid-cols-2]="oauthProviders.length > 1">
+              @if (showsProvider('github')) {
+                <button ui-button variant="outline" type="button" (click)="oauth.emit('github')">
+                  <lucide-icon [img]="Github" class="mr-2 size-4" />
+                  GitHub
+                </button>
+              }
+              @if (showsProvider('google')) {
+                <button ui-button variant="outline" type="button" (click)="oauth.emit('google')">
+                  <svg class="mr-2 size-4" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0012 23z"
+                    />
+                    <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 010-4.2V7.06H2.18a11 11 0 000 9.88l3.66-2.84z" />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 002.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+                    />
+                  </svg>
+                  Google
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <div ui-card-footer class="justify-center">
+          <p class="text-muted-foreground text-sm">
+            Don&apos;t have an account?
+            <a [href]="signUpHref" class="text-foreground font-medium underline-offset-4 hover:underline">Sign up</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  `,
+})
+export class UiAuthSignInComponent {
+  protected readonly Github = Github
+
+  @Input() title = 'Welcome back'
+  @Input() description = 'Sign in to your account to continue'
+  @Input() signUpHref = '/sign-up'
+  @Input() forgotPasswordHref = '/forgot-password'
+  @Input() oauthProviders: AuthSignInOauthProvider[] = ['github', 'google']
+  @Input('class') className?: string
+
+  @Output() readonly submit = new EventEmitter<AuthSignInPayload>()
+  @Output() readonly oauth = new EventEmitter<AuthSignInOauthProvider>()
+
+  readonly email = signal('')
+  readonly password = signal('')
+  readonly remember = signal(false)
+
+  get rootClass(): string {
+    return cn('bg-background flex min-h-svh items-center justify-center p-6', this.className)
+  }
+
+  showsProvider(provider: AuthSignInOauthProvider): boolean {
+    return this.oauthProviders.includes(provider)
+  }
+
+  onSubmit(event: Event): void {
+    event.preventDefault()
+    this.submit.emit({ email: this.email(), password: this.password(), remember: this.remember() })
+  }
+}

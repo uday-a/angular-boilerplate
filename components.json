@@ -1,0 +1,21 @@
+{
+  "$schema": "https://uipkge.dev/schema.json",
+  "style": "new-york",
+  "typescript": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "src/app/components",
+    "utils": "src/app/core/utils",
+    "ui": "src/app/components/ui",
+    "lib": "src/app/core"
+  },
+  "iconLibrary": "lucide",
+  "registries": {
+    "@uipkge": "https://uipkge.dev/r/angular/{name}.json"
+  }
+}

@@ -1,0 +1,47 @@
+# Angular dev/build outputs
+/dist
+/tmp
+/out-tsc
+/bazel-out
+/.angular/cache
+
+# Node dependencies
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Test output artifacts
+/test-results/
+/playwright-report/
+/blob-report/
+/coverage
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+Thumbs.db
+.fleet
+.idea
+.project
+.classpath
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Playwright MCP screenshots (local debug artifacts)
+.playwright-mcp/

@@ -1,0 +1,13 @@
+/* Typecheck project for the Express API layer (server/) + drizzle config.
+ * The Angular app itself is covered by tsconfig.app.json; `npm run typecheck`
+ * runs both. Kept separate so `ng build` (which reads tsconfig.app.json)
+ * never pulls server-only files into the browser program. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/server",
+    "types": ["node"]
+  },
+  "include": ["server/**/*.ts", "drizzle.config.ts"],
+  "exclude": ["server/**/*.spec.ts"]
+}

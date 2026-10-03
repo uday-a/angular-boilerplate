@@ -1,0 +1,216 @@
+{
+  "auth": {
+    "signIn": {
+      "title": "Welcome back",
+      "description": "Sign in to your account to continue",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@company.com",
+      "passwordLabel": "Password",
+      "forgotPassword": "Forgot password?",
+      "rememberMe": "Remember me for 30 days",
+      "submit": "Sign in",
+      "orContinueWith": "or continue with",
+      "noAccount": "Don't have an account?",
+      "signUpLink": "Sign up"
+    },
+    "signUp": {
+      "title": "Create your account",
+      "description": "Start your 14-day free trial. No credit card required.",
+      "nameLabel": "Full name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@company.com",
+      "passwordLabel": "Password",
+      "passwordHint": "8+ characters, mix of letters, numbers and symbols.",
+      "confirmLabel": "Confirm password",
+      "passwordsMismatch": "Passwords don't match.",
+      "agreePrefix": "I agree to the",
+      "termsLink": "Terms of Service",
+      "agreeJoiner": "and",
+      "privacyLink": "Privacy Policy",
+      "submit": "Create account",
+      "orContinueWith": "or continue with",
+      "hasAccount": "Already have an account?",
+      "signInLink": "Sign in"
+    },
+    "passwordReset": {
+      "srTitle": "Reset password",
+      "request": {
+        "title": "Forgot password?",
+        "description": "Enter your email and we'll send you a reset link.",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@company.com",
+        "submit": "Send reset link",
+        "back": "Back to sign in"
+      },
+      "sent": {
+        "title": "Check your inbox",
+        "descriptionPrefix": "We've sent a reset link to",
+        "descriptionSuffix": ".",
+        "openDemo": "Open reset form (demo)",
+        "wrongEmail": "Wrong email?"
+      },
+      "reset": {
+        "title": "Set new password",
+        "description": "Pick a strong password you haven't used before.",
+        "passwordLabel": "New password",
+        "confirmLabel": "Confirm password",
+        "passwordsMismatch": "Passwords don't match.",
+        "submit": "Reset password"
+      },
+      "done": {
+        "title": "All set",
+        "description": "Your password has been updated. You can now sign in with the new password.",
+        "submit": "Continue to sign in"
+      }
+    },
+    "mfa": {
+      "title": "Two-step verification",
+      "description": "Enter the 6-digit code from your authenticator app.",
+      "verifying": "Verifying…",
+      "invalidCode": "Invalid code. Try {{code}} for the demo.",
+      "resend": "Resend code",
+      "resendCooldown": "Resend available in {{seconds}}s",
+      "lostDevicePrefix": "Lost your device?",
+      "recoveryLink": "Use a recovery code",
+      "verifiedTitle": "Verified",
+      "verifiedDescription": "You're all set. Continuing to your dashboard…",
+      "continue": "Continue"
+    }
+  },
+  "nav": {
+    "groups": {
+      "platform": "Platform",
+      "projects": "Projects",
+      "teams": "Teams"
+    },
+    "actions": {
+      "toggle": "Toggle",
+      "more": "More",
+      "addTeam": "Add team",
+      "viewProject": "View Project",
+      "shareProject": "Share Project",
+      "deleteProject": "Delete Project"
+    },
+    "user": {
+      "upgrade": "Upgrade to Pro",
+      "account": "Account",
+      "billing": "Billing",
+      "notifications": "Notifications",
+      "logout": "Log out"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "kanban": "Kanban",
+      "dataTable": "Data table",
+      "calendar": "Calendar",
+      "activity": "Activity",
+      "uiKit": "UI Kit",
+      "forms": "Forms",
+      "settings": "Settings",
+      "general": "General",
+      "account": "Account",
+      "security": "Security",
+      "notifications": "Notifications",
+      "integrations": "Integrations",
+      "team": "Team",
+      "billing": "Billing",
+      "limits": "Limits",
+      "support": "Support",
+      "feedback": "Feedback",
+      "admin": "Admin",
+      "users": "Users",
+      "roles": "Roles & permissions"
+    }
+  },
+  "admin": {
+    "title": "Users",
+    "subtitle": "{{count}} registered users",
+    "user": "User",
+    "role": "Role",
+    "joined": "Joined",
+    "loading": "Loading users…",
+    "loadFailed": "Could not load users. Please try again.",
+    "empty": "No users yet.",
+    "forbidden": "You don't have permission to view this page.",
+    "forbiddenRole": "Your role: {{role}} · Required: admin",
+    "forbiddenHelp": "Contact an admin for access.",
+    "roles": {
+      "description": "Decide what each role can see and change across the workspace.",
+      "unsaved": "no unsaved changes | 1 unsaved change | {{n}} unsaved changes",
+      "saved": "Saved",
+      "discard": "Discard",
+      "save": "Save changes",
+      "demo": "Sample roles. Changes last for this session only.",
+      "locked": "System role, can’t be edited",
+      "members": "no members | 1 member | {{n}} members",
+      "risky": "High-risk permission",
+      "riskyHint": "Destructive or security-sensitive. Grant sparingly.",
+      "matrix": {
+        "title": "Permissions",
+        "description": "Tick a group to grant everything in it. The Owner role always has full access.",
+        "search": "Filter permissions…",
+        "permission": "Permission",
+        "groupAria": "All {{group}} permissions for {{role}}",
+        "emptyTitle": "No permissions match",
+        "emptyDescription": "Try a different search."
+      },
+      "legend": {
+        "risky": "High-risk",
+        "changed": "Unsaved change",
+        "locked": "Locked system role"
+      }
+    },
+    "everyone": "Everyone with an account in this workspace.",
+    "adminsOnly": "Admins only",
+    "loadFailedTitle": "Couldn’t load users",
+    "actions": "Actions",
+    "noMatchTitle": "No users match",
+    "noMatchDescription": "Try a different search, role or date range.",
+    "roleNames": {
+      "admin": "Admin",
+      "editor": "Editor",
+      "user": "Member"
+    },
+    "filters": {
+      "search": "Search name or username…",
+      "role": "Filter by role",
+      "allRoles": "All roles",
+      "joined": "Joined any time",
+      "reset": "Reset",
+      "showing": "{{shown}} of {{total}}"
+    },
+    "menu": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "edit": {
+      "title": "Edit user",
+      "description": "Update their name, username or role.",
+      "name": "Full name",
+      "username": "Username",
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "required": "Name and username are required."
+    },
+    "delete": {
+      "title": "Delete {{name}}?",
+      "description": "They lose access to this workspace immediately. You can undo from the notification for a few seconds.",
+      "confirm": "Delete user"
+    },
+    "toast": {
+      "updated": "{{name}} updated",
+      "deleted": "{{name}} deleted",
+      "undo": "Undo",
+      "restored": "{{name}} restored"
+    },
+    "editFor": "Edit {{name}}",
+    "deleteFor": "Delete {{name}}"
+  },
+  "settings": {
+    "activity": {
+      "states": {
+        "retry": "Retry"
+      }
+    }
+  }
+}
