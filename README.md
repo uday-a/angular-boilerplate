@@ -424,6 +424,29 @@ PORT=4000 node dist/angular-boilerplate/server/server.mjs
 
 The build bundles the browser app, the SSR server and the Express API into `dist/angular-boilerplate/`. Env is validated at startup, so a bad config fails before the server listens.
 
+### Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fuday-a%2Fangular-boilerplate&env=SESSION_PASSWORD&envDescription=32%2B%20random%20characters%3A%20openssl%20rand%20-base64%2032)
+
+`vercel.json` holds the whole setup: Vercel's CDN serves the static browser bundle, and every other path (SSR pages, `/api/*`, `/auth/*`) goes to one Node function (`api/index.mjs`) that runs the same Express app as `npm start`.
+
+1. In the Vercel dashboard: **Add New → Project → Import** this repo. Leave the framework preset, build command and output directory as they are (`vercel.json` overrides them).
+2. Add environment variables (Settings → Environment Variables):
+
+   | Variable | Value |
+   |---|---|
+   | `SESSION_PASSWORD` | **Required.** Output of `openssl rand -base64 32`. Without it the function fails on boot. |
+   | `DEMO_MODE` | `true` for a public demo: anyone can sign in as **admin** (see the warning below). Leave unset for a real app. |
+   | `SITE_URL` | `https://<your-domain>`. Used for OAuth redirects and email links. |
+   | `NG_ALLOWED_HOSTS` | Only for custom domains, e.g. `example.com,www.example.com`. `*.vercel.app` is allowed automatically on Vercel. |
+   | Optional | `GITHUB_*`, `DATABASE_URL`, `RESEND_API_KEY`, `POLAR_*`, `SENTRY_DSN`, `POSTHOG_*`, `AXIOM_*`. Same meaning as in `.env.example`. |
+
+3. Deploy. Redeploy after changing env vars.
+
+Vercel sets `NODE_ENV=production`, so session cookies are `Secure`. On serverless, use a pooled Postgres URL (Neon pooler, Supabase transaction pooler). The rate limiter is in memory, so each function instance counts separately. Treat it as a throttle, not a hard limit.
+
+Self-hosting is unchanged: `npm start` ignores `vercel.json` and `api/`.
+
 > [!WARNING]
 > **`DEMO_MODE`: demo sign-in creates an ADMIN session.** While demo mode is on, anyone can `POST /auth/demo` and get a logged-in **admin** session — a deliberate auth bypass. It is auto-on **only in local development** (`NODE_ENV=development`, which `npm run dev` sets). Every deployment — production, staging or preview — must set `DEMO_MODE=true` **explicitly** to offer a public demo, and should leave it unset or `false` otherwise.
 
@@ -432,7 +455,7 @@ The build bundles the browser app, the SSR server and the Express API into `dist
 - [ ] Generate a fresh `SESSION_PASSWORD` (never reuse dev).
 - [ ] Set `NODE_ENV=production` and `SITE_URL` to your real domain.
 - [ ] Leave `DEMO_MODE` unset or `false` — set `DEMO_MODE=true` only for a deliberate public demo (it grants admin sessions to anyone).
-- [ ] Set `NG_ALLOWED_HOSTS` to every hostname clients use (apex, `www`, health-check host), or SSR falls back to client-side rendering.
+- [ ] Set `NG_ALLOWED_HOSTS` to every hostname clients use (apex, `www`, health-check host); other hosts get a 400 from SSR.
 - [ ] Register the OAuth callback: `https://<host>/auth/github/callback`.
 - [ ] Register the Polar webhook: `https://<host>/api/webhooks/polar`.
 - [ ] Run `npm run db:migrate` against the production `DATABASE_URL`.

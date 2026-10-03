@@ -45,3 +45,6 @@ Thumbs.db
 
 # Playwright MCP screenshots (local debug artifacts)
 .playwright-mcp/
+
+# Vercel CLI local link/build output
+.vercel

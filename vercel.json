@@ -1,0 +1,18 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/angular-boilerplate/browser",
+  "functions": {
+    "api/index.mjs": {
+      "includeFiles": "dist/angular-boilerplate/server/**"
+    }
+  },
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "headers": [
+    {
+      "source": "/:file((?:main|polyfills|styles|chunk)-[A-Z0-9]+\\.(?:js|css))",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}

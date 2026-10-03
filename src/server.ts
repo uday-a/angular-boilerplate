@@ -108,10 +108,20 @@ app.use((req, res, next) => {
 // dist/.../server.mjs` in prod and tsx/ts-node on this file in dev.
 const entryFile = (process.argv[1] ?? '').replace(/\\/g, '/')
 if (entryFile.endsWith('/server.mjs') || entryFile.endsWith('/server.ts') || process.env['pm_id']) {
-  // Fail fast on invalid env before listening (production safety), then init
-  // optional error monitoring — no-ops when SENTRY_DSN is unset. Both run
-  // here (not at module top-level) so `ng build` route extraction, which
-  // imports this module, never throws on a clean checkout without env.
+  boot()
+  const port = process.env['PORT'] || 4000
+  app.listen(port, () => {
+    console.log(`Node Express server listening on http://localhost:${port}`)
+  })
+}
+
+/**
+ * Boot-only work, shared by the listen block above and the Vercel function
+ * (api/index.mjs). Fail fast on invalid env, then init optional error
+ * monitoring (no-op when SENTRY_DSN is unset). Never called at module
+ * top-level, so `ng build` route extraction never throws on a clean checkout.
+ */
+export function boot(): void {
   try {
     assertValidEnv()
   } catch {
@@ -122,11 +132,6 @@ if (entryFile.endsWith('/server.mjs') || entryFile.endsWith('/server.ts') || pro
     process.exit(1)
   }
   initServerSentry()
-
-  const port = process.env['PORT'] || 4000
-  app.listen(port, () => {
-    console.log(`Node Express server listening on http://localhost:${port}`)
-  })
 }
 
 /**
