@@ -10,7 +10,7 @@ import { UiButtonComponent } from '@/app/components/ui/button/button.component'
 import { UiInputComponent } from '@/app/components/ui/input/input.component'
 import { UiSeparatorComponent } from '@/app/components/ui/separator/separator.component'
 
-const REPO_URL = 'https://github.com/uipkge/angular-boilerplate'
+const REPO_URL = 'https://github.com/uday-a/angular-boilerplate'
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
