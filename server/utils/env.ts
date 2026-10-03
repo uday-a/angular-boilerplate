@@ -16,6 +16,7 @@
 //
 // Import `env` / `has*` / `isDemoMode` from here instead of reading
 // process.env directly.
+import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 
 const Env = z.object({
@@ -93,7 +94,19 @@ function loadEnv(): AppEnv {
 
   // `KEY=` lines (as in .env.example) arrive as '' — treat them as unset so a
   // copied example file boots instead of failing .url()/.email()/enum checks.
-  const parsed = Env.safeParse(Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== '')))
+  const raw: Record<string, string | undefined> = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== ''))
+  // Zero-config: when SESSION_PASSWORD is unset, seal cookies with a random
+  // per-instance secret (warned once) so a fresh clone or Vercel import boots
+  // as-is. Sessions then reset on every restart / new serverless instance —
+  // set SESSION_PASSWORD for any real deployment.
+  if (!raw['SESSION_PASSWORD']) {
+    raw['SESSION_PASSWORD'] = randomBytes(32).toString('base64')
+    console.warn(
+      '⚠️  SESSION_PASSWORD is not set — using a random per-instance secret. Sessions reset on every '
+      + 'restart / new instance. Set SESSION_PASSWORD (openssl rand -base64 32) for real deployments.',
+    )
+  }
+  const parsed = Env.safeParse(raw)
   if (!parsed.success) {
     console.error('\n❌ Invalid environment variables:\n')
     for (const issue of parsed.error.issues) {

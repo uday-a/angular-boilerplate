@@ -53,7 +53,7 @@ npm run dev
 # → http://localhost:4201/login  (Continue as demo user)
 ```
 
-`SESSION_PASSWORD` (32+ characters) is the only required variable — both servers refuse to boot without it. Demo mode is **on by default in development** (`npm run dev` sets `NODE_ENV=development`) and off otherwise, so `/login` shows **Continue as demo user** with no further config. Any deployed environment (production, staging or preview) keeps it off unless you set `DEMO_MODE=true` explicitly — see [Deployment](#deployment).
+No variable is required — it boots zero-config. Set `SESSION_PASSWORD` (32+ characters) for any real deployment; without it a random per-instance secret is used (a warning is logged) and sessions reset on every restart/new instance. Demo mode is **on by default in development** (`npm run dev` sets `NODE_ENV=development`) and off otherwise, so `/login` shows **Continue as demo user** with no further config. Any deployed environment (production, staging or preview) keeps it off unless you set `DEMO_MODE=true` explicitly — see [Deployment](#deployment).
 
 ### Routes
 
@@ -275,7 +275,7 @@ cp .env.example .env
 openssl rand -base64 32   # paste into SESSION_PASSWORD
 ```
 
-Only `SESSION_PASSWORD` is required. Empty values in `.env` count as unset — see the matrix below.
+No variable is required; `SESSION_PASSWORD` is recommended for real deployments. Empty values in `.env` count as unset — see the matrix below.
 
 ### 3. Database (optional)
 
@@ -370,7 +370,7 @@ apiRouter.use('/hello', helloRouter)
 
 | Env var(s) | Unset | Set |
 |---|---|---|
-| `SESSION_PASSWORD` | **Boot fails** — required (32+ chars) | Sessions encrypted |
+| `SESSION_PASSWORD` | Random per-instance secret (warning logged); sessions reset on restart | Stable sessions (32+ chars) |
 | `DEMO_MODE` | Auto: on only when `NODE_ENV=development` | `true` forces demo sign-in on, `false` forces it off |
 | `GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET` | GitHub sign-in unavailable | GitHub OAuth |
 | `INITIAL_ADMIN_LOGINS` | Nobody auto-promoted | Listed GitHub logins created as admins on first sign-in |
@@ -426,7 +426,7 @@ The build bundles the browser app, the SSR server and the Express API into `dist
 
 ### Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fuday-a%2Fangular-boilerplate&env=SESSION_PASSWORD&envDescription=32%2B%20random%20characters%3A%20openssl%20rand%20-base64%2032)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fuday-a%2Fangular-boilerplate)
 
 `vercel.json` holds the whole setup: Vercel's CDN serves the static browser bundle, and every other path (SSR pages, `/api/*`, `/auth/*`) goes to one Node function (`api/index.mjs`) that runs the same Express app as `npm start`.
 
@@ -435,7 +435,7 @@ The build bundles the browser app, the SSR server and the Express API into `dist
 
    | Variable | Value |
    |---|---|
-   | `SESSION_PASSWORD` | **Required.** Output of `openssl rand -base64 32`. Without it the function fails on boot. |
+   | `SESSION_PASSWORD` | **Recommended.** Output of `openssl rand -base64 32`. Without it sessions reset on every cold start / new instance. |
    | `DEMO_MODE` | `true` for a public demo: anyone can sign in as **admin** (see the warning below). Leave unset for a real app. |
    | `SITE_URL` | `https://<your-domain>`. Used for OAuth redirects and email links. |
    | `NG_ALLOWED_HOSTS` | Only for custom domains, e.g. `example.com,www.example.com`. `*.vercel.app` is allowed automatically on Vercel. |
