@@ -16,7 +16,7 @@
 //
 // Import `env` / `has*` / `isDemoMode` from here instead of reading
 // process.env directly.
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
 
 const Env = z.object({
@@ -88,6 +88,24 @@ function fail(message: string): never {
   throw cachedError
 }
 
+// SESSION_PASSWORD fallback. A *pure demo* (demo mode on, and no integration
+// that guards real data or side effects: database, GitHub OAuth, Resend email,
+// Polar billing) gets a deterministic secret so sessions survive across
+// serverless instances — a forged cookie there grants nothing beyond the
+// public "Continue as demo user" button (sample data only). Anything else gets
+// a random per-instance secret plus a warning (sessions reset on restart).
+// Real deployments should set SESSION_PASSWORD (openssl rand -base64 32).
+const REAL_INTEGRATION_VARS = ['DATABASE_URL', 'GITHUB_CLIENT_ID', 'RESEND_API_KEY', 'POLAR_ACCESS_TOKEN']
+export function fallbackSessionPassword(raw: Record<string, string | undefined>): { value: string, stable: boolean } {
+  const pureDemo = resolveDemoMode(raw['DEMO_MODE'], process.env['NODE_ENV'])
+    && REAL_INTEGRATION_VARS.every(k => !raw[k])
+  if (pureDemo) {
+    const seed = `uipkge-pure-demo:${raw['VERCEL_PROJECT_ID'] ?? 'local'}`
+    return { value: createHash('sha256').update(seed).digest('base64'), stable: true }
+  }
+  return { value: randomBytes(32).toString('base64'), stable: false }
+}
+
 function loadEnv(): AppEnv {
   if (cachedEnv) return cachedEnv
   if (cachedError) throw cachedError
@@ -95,13 +113,11 @@ function loadEnv(): AppEnv {
   // `KEY=` lines (as in .env.example) arrive as '' — treat them as unset so a
   // copied example file boots instead of failing .url()/.email()/enum checks.
   const raw: Record<string, string | undefined> = Object.fromEntries(Object.entries(process.env).filter(([, v]) => v !== ''))
-  // Zero-config: when SESSION_PASSWORD is unset, seal cookies with a random
-  // per-instance secret (warned once) so a fresh clone or Vercel import boots
-  // as-is. Sessions then reset on every restart / new serverless instance —
-  // set SESSION_PASSWORD for any real deployment.
+  // Zero-config: see fallbackSessionPassword() above.
   if (!raw['SESSION_PASSWORD']) {
-    raw['SESSION_PASSWORD'] = randomBytes(32).toString('base64')
-    console.warn(
+    const fallback = fallbackSessionPassword(raw)
+    raw['SESSION_PASSWORD'] = fallback.value
+    if (!fallback.stable) console.warn(
       '⚠️  SESSION_PASSWORD is not set — using a random per-instance secret. Sessions reset on every '
       + 'restart / new instance. Set SESSION_PASSWORD (openssl rand -base64 32) for real deployments.',
     )
