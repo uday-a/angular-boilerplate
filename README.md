@@ -9,7 +9,7 @@
 
 A production-grade **Angular SaaS boilerplate / starter kit** built on **Angular 20** with **server-side rendering (SSR)**, **TypeScript** and **Tailwind CSS 4**, using the shadcn-style [**`@uipkge`** Angular UI registry](https://uipkge.dev/angular/components). One Node process serves the SSR pages and an Express API with GitHub OAuth + magic-link authentication, admin role-based access control (RBAC), team invites, API keys, an audit log, Polar billing, Resend email, a Drizzle ORM + Postgres schema, English/Spanish i18n and a full dashboard (charts, kanban, data table, calendar, map). **Every external integration is gated on env**, so a fresh clone runs in demo mode with no database, OAuth app or API keys.
 
-**[Live demo](https://angular-boilerplate-taupe-psi.vercel.app/login)** · **[Vue/Nuxt sibling: nuxt-boilerplate](https://github.com/uday-a/nuxt-boilerplate)** · **[React/Next.js sibling: next-boilerplate](https://github.com/uday-a/next-boilerplate)** · **[UI registry: uipkge.dev](https://uipkge.dev)**
+**[Live demo](https://angular-boilerplate-taupe-psi.vercel.app/login)** · **[Vue/Nuxt sibling: nuxt-boilerplate](https://github.com/uday-a/nuxt-boilerplate)** · **[React/Next.js sibling: next-boilerplate](https://github.com/uday-a/next-boilerplate)** · **[SvelteKit sibling: sveltekit-boilerplate](https://github.com/uday-a/sveltekit-boilerplate)** · **[UI registry: uipkge.dev](https://uipkge.dev)**
 
 - **Auth:** GitHub OAuth (arctic), passwordless magic links, demo sign-in, encrypted `iron-session` cookies, team invites by token
 - **SSR:** Angular 20 SSR + hydration with event replay, server-side auth redirects, Express 5 API in the same process
