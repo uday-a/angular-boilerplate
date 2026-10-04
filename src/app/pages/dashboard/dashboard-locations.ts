@@ -171,7 +171,7 @@ export function formatArr(k: number): string {
         <div class="grid gap-4 lg:grid-cols-3">
           <ui-card>
             <ui-card-header>
-              <div class="flex flex-col gap-2 sm:flex-row">
+              <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
                 <div class="relative min-w-0 flex-1">
                   <lucide-icon
                     [img]="SearchIcon"
@@ -188,7 +188,7 @@ export function formatArr(k: number): string {
                   />
                 </div>
                 <ui-select [value]="kindFilter()" (valueChange)="onKind($event)">
-                  <button ui-select-trigger class="w-full sm:w-32" [attr.aria-label]="'dashboard.locations.filter.label' | translate">
+                  <button ui-select-trigger class="w-full sm:w-32 lg:w-full xl:w-32" [attr.aria-label]="'dashboard.locations.filter.label' | translate">
                     <ui-select-value [placeholder]="'dashboard.locations.filter.label' | translate" />
                   </button>
                   <ui-select-content>
@@ -209,20 +209,20 @@ export function formatArr(k: number): string {
                         type="button"
                         [attr.aria-pressed]="selectedId() === office.id"
                         [class]="
-                          'flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors ' +
+                          'flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border px-3 py-2 text-left transition-colors ' +
                           (selectedId() === office.id
                             ? 'border-primary/40 bg-primary/5 ring-primary ring-1'
                             : 'border-border/70 hover:border-border hover:bg-muted/50')
                         "
                         (click)="selectOffice(office.id)"
                       >
-                        <span [class]="'block size-2 shrink-0 rounded-full ' + dotBg(office.kind)"></span>
-                        <span class="min-w-0 flex-1">
+                        <span class="min-w-[9.5rem] flex-1">
                           <span class="flex items-center gap-1.5">
+                            <span [class]="'block size-2 shrink-0 rounded-full ' + dotBg(office.kind)"></span>
                             <span class="truncate text-sm font-medium">{{ office.city }}</span>
                             <ui-badge [variant]="badgeVariant(office.kind)">{{ 'dashboard.locations.kind.' + office.kind | translate }}</ui-badge>
                           </span>
-                          <span class="text-muted-foreground flex items-center gap-1.5 truncate text-xs">
+                          <span class="text-muted-foreground flex items-center gap-1.5 truncate pl-3.5 text-xs">
                             {{ office.country }}
                             @if (localTime(office.timezone); as time) {
                               <span aria-hidden="true">·</span>
@@ -232,8 +232,10 @@ export function formatArr(k: number): string {
                           </span>
                         </span>
                         <!-- Growth sits beside the headcount and roles get their own
-                             line, so the city/time column keeps its width. -->
-                        <span class="shrink-0 text-right">
+                             line. In a narrow column the whole block wraps under
+                             the city (min-w on the city column) instead of
+                             squeezing it to a letter. -->
+                        <span class="ml-auto shrink-0 text-right">
                           <span class="flex items-baseline justify-end gap-1.5">
                             <!-- WHY (Rules 37/40): growth pairs color with a shape
                                  so direction never rides on green alone. -->

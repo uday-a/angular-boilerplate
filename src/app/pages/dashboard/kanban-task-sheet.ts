@@ -65,7 +65,7 @@ export interface KanbanSheetComment {
         @if (task; as t) {
           <div [class]="stripClass(t)"></div>
           <ui-sheet-header class="border-b">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2 pr-8">
               <span class="text-muted-foreground font-mono text-xs tracking-tight">{{ t.id }}</span>
               <span class="text-muted-foreground" aria-hidden="true">·</span>
               <select

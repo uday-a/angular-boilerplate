@@ -28,7 +28,7 @@ import {
   Table2,
 } from 'lucide-angular'
 import { AuthService } from '@/app/core/auth/auth.service'
-import { I18nService } from '@/app/core/i18n'
+import { I18nService, PageTitleState } from '@/app/core/i18n'
 import { ThemeService, type Theme } from '@/app/core/theme/theme.service'
 import { routeLabel } from '@/app/core/dashboard/breadcrumb-labels'
 import { isNavItemActive } from '@/app/core/dashboard/nav-active'
@@ -181,24 +181,25 @@ export interface DashboardCrumb {
           <div class="flex min-w-0 items-center gap-2">
             <ui-sidebar-trigger class="-ml-1" />
             <ui-separator orientation="vertical" class="mr-2 h-4" />
-            <ui-breadcrumb class="min-w-0">
-              <ui-breadcrumb-list>
+            <ui-breadcrumb class="min-w-0 overflow-hidden">
+              <!-- One line: earlier crumbs keep their width, the last one truncates. -->
+              <ui-breadcrumb-list class="flex-nowrap">
                 @for (crumb of breadcrumbs(); track crumb.label; let i = $index; let last = $last) {
-                  <ui-breadcrumb-item [class]="i === 0 ? 'hidden md:block' : ''">
+                  <ui-breadcrumb-item [class]="i === 0 ? 'hidden shrink-0 md:block' : last ? 'min-w-0' : 'shrink-0'">
                     @if (crumb.href && !last) {
                       <a
                         ui-breadcrumb-link
                         [routerLink]="crumb.href"
-                        class="text-muted-foreground hover:text-foreground transition-colors"
+                        class="text-muted-foreground hover:text-foreground whitespace-nowrap transition-colors"
                       >
                         {{ crumb.label }}
                       </a>
                     } @else {
-                      <ui-breadcrumb-page class="font-medium">{{ crumb.label }}</ui-breadcrumb-page>
+                      <ui-breadcrumb-page class="block truncate font-medium">{{ crumb.label }}</ui-breadcrumb-page>
                     }
                   </ui-breadcrumb-item>
                   @if (!last) {
-                    <ui-breadcrumb-separator [class]="i === 0 ? 'hidden md:block' : ''" />
+                    <ui-breadcrumb-separator [class]="i === 0 ? 'hidden shrink-0 md:block' : 'shrink-0'" />
                   }
                 }
               </ui-breadcrumb-list>
@@ -210,7 +211,7 @@ export interface DashboardCrumb {
               data-tour="github"
               target="_blank"
               rel="noreferrer"
-              class="border-border/80 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:inline-flex"
+              class="border-border/80 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors xl:inline-flex"
             >
               <svg class="size-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path
@@ -267,6 +268,7 @@ export class DashboardLayoutComponent {
   private readonly router = inject(Router)
   private readonly auth = inject(AuthService)
   private readonly i18n = inject(I18nService)
+  private readonly pageTitle = inject(PageTitleState)
   readonly theme = inject(ThemeService)
 
   private readonly sessionUser = toSignal(this.auth.user$, { initialValue: null })
@@ -309,9 +311,14 @@ export class DashboardLayoutComponent {
     const t = (k: string) => this.i18n.t(k)
     const parts = this.pathname().split('/').filter(Boolean)
     if (parts.length === 0) return [{ label: t('nav.items.dashboard') }]
+    const page = this.pageTitle.current()
     return parts.map((_, i) => {
       const path = '/' + parts.slice(0, i + 1).join('/')
-      return { label: routeLabel(path, t), href: i < parts.length - 1 ? path : undefined }
+      const last = i === parts.length - 1
+      // Last crumb: the page's own label when it set one for this path
+      // (kanban task title, project name), else the route label.
+      const label = last && page?.path === path ? page.label : routeLabel(path, t)
+      return { label, href: last ? undefined : path }
     })
   })
 
