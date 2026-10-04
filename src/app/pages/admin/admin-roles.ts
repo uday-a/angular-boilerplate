@@ -3,7 +3,6 @@
 // Sets per role, `saved` is the baseline we diff against, group checkboxes
 // are tri-state, role summary cards highlight their column.
 import { Component, computed, inject, signal } from '@angular/core'
-import { Title } from '@angular/platform-browser'
 import { Lock, LucideAngularModule, Search, ShieldAlert, Users } from 'lucide-angular'
 import { UiPageBodyComponent, UiPageComponent, UiPageHeaderComponent, UiPageHeaderHeadingComponent } from '@/app/components/ui/page'
 import {
@@ -21,7 +20,7 @@ import { UiCheckboxComponent, type CheckedState } from '@/app/components/ui/chec
 import { UiInputComponent } from '@/app/components/ui/input'
 import { UiTooltipComponent, UiTooltipContentComponent, UiTooltipTriggerComponent } from '@/app/components/ui/tooltip'
 import { UiDemoDataBannerComponent } from '@/app/components/blocks/demo-data-banner'
-import { I18nService } from '@/app/core/i18n'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 import { cn } from '@/app/core/utils/cn'
 import {
   allPermissionIds,
@@ -62,7 +61,7 @@ function toSets(g: Record<RoleId, string[]>): Record<RoleId, Set<string>> {
   template: `
     <ui-page>
       <ui-page-header>
-        <ui-page-header-heading [title]="t('nav.items.roles')" [description]="t('admin.roles.description')" />
+        <ui-page-header-heading [title]="pageTitle()" [description]="t('admin.roles.description')" />
         @if (changeCount() > 0) {
           <span slot="actions" class="text-warning text-xs font-medium tabular-nums">
             {{ i18n.tc('admin.roles.unsaved', changeCount()) }}
@@ -276,10 +275,8 @@ export class AdminRoles {
   private flashTimer?: ReturnType<typeof setTimeout>
 
   protected readonly i18n = inject(I18nService)
+  protected readonly pageTitle = injectPageTitle()
 
-  constructor() {
-    inject(Title).setTitle('Roles & permissions')
-  }
 
   t(key: string, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params)

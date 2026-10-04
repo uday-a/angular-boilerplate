@@ -8,7 +8,7 @@ import { Info, LucideAngularModule } from 'lucide-angular'
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'ui-demo-data-banner, [ui-demo-data-banner]',
   standalone: true,
-  host: { '[attr.class]': '"contents"' },
+  host: { class: 'block' },
   imports: [LucideAngularModule],
   template: `
     <div

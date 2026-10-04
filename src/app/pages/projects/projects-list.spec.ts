@@ -6,7 +6,8 @@ import { provideRouter } from '@angular/router'
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import type { WritableSignal } from '@angular/core'
-import { ProjectsList, slugifyProjectName } from '@/app/pages/projects/projects-list'
+import { ProjectsList, sampleMeta, slugifyProjectName } from '@/app/pages/projects/projects-list'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 describe('slugifyProjectName', () => {
   it('derives kebab-case slugs', () => {
@@ -32,8 +33,9 @@ describe('ProjectsList', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProjectsList],
-      providers: [provideZonelessChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     http = TestBed.inject(HttpTestingController)
     fixture = TestBed.createComponent(ProjectsList)
     fixture.detectChanges()
@@ -63,11 +65,22 @@ describe('ProjectsList', () => {
     expect(fixture.nativeElement.textContent).toContain('No projects yet')
   })
 
-  it('surfaces envelope errors', async () => {
+  it('shows a retryable error state without leaking the raw message', async () => {
     http.expectOne('/api/projects').flush({ ok: false, error: { code: 'FORBIDDEN', message: 'Denied' } })
     fixture.detectChanges()
     await fixture.whenStable()
-    expect(fixture.nativeElement.textContent).toContain('Denied')
+    const text = fixture.nativeElement.textContent as string
+    expect(text).toContain("Couldn't load projects")
+    expect(text).not.toContain('Denied')
+  })
+
+  it('labels sample members / status / open tasks as sample data', async () => {
+    flushList()
+    await fixture.whenStable()
+    const text = fixture.nativeElement.textContent as string
+    expect(text).toContain('Members, status and open tasks are sample values.')
+    expect(text).toContain(`${sampleMeta(1).openTasks} open`)
+    expect(text).toContain(sampleMeta(1).status.label)
   })
 
   it('auto-derives the slug from the name until the slug is touched', () => {

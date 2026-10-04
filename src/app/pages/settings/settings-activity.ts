@@ -7,7 +7,6 @@
 import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
 import { HttpClient, HttpParams } from '@angular/common/http'
-import { Title } from '@angular/platform-browser'
 import {
   Activity as ActivityIcon,
   CloudOff,
@@ -34,7 +33,8 @@ import {
   UiTableRowComponent,
 } from '@/app/components/ui/table'
 import { type ApiResponse, apiErrorMessage } from '@/app/core/api/api'
-import { I18nService } from '@/app/core/i18n'
+import { UiPageBodyComponent, UiPageComponent, UiPageHeaderComponent, UiPageHeaderHeadingComponent } from '@/app/components/ui/page'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 
 export interface ActivityItem {
   id: number
@@ -69,6 +69,10 @@ export function entityLabel(item: Pick<ActivityItem, 'entity' | 'entityId'>): st
     UiEmptyStateComponent,
     UiCardComponent,
     UiInputComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiTableBodyComponent,
     UiTableCellComponent,
     UiTableComponent,
@@ -77,116 +81,117 @@ export function entityLabel(item: Pick<ActivityItem, 'entity' | 'entityId'>): st
     UiTableRowComponent,
   ],
   template: `
-    <div class="space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">Activity log</h1>
-        <p class="text-muted-foreground text-sm">Audit trail of who did what in your workspace.</p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading [title]="pageTitle()" [description]="t('settings.activity.description')" />
+      </ui-page-header>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative max-w-xs flex-1">
-          <lucide-icon
-            [img]="SearchIcon"
-            class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
-          />
-          <ui-input
-            [value]="actionQuery()"
-            (valueChange)="onActionQuery($event)"
-            placeholder="Filter by action (e.g. team)"
-            class="pl-8 h-9"
-          />
-        </div>
-        <div class="relative max-w-xs flex-1">
-          <lucide-icon
-            [img]="TagIcon"
-            class="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
-          />
-          <ui-input
-            [value]="entityQuery()"
-            (valueChange)="entityQuery.set($event)"
-            placeholder="Filter by entity"
-            class="pl-8 h-9"
-          />
-        </div>
-      </div>
-
-      <ui-card>
-        @if (pending()) {
-          <div class="text-muted-foreground flex items-center gap-2 px-4 py-4 text-sm">
-            <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
-            Loading activity…
+      <ui-page-body class="space-y-4">
+        <ui-card>
+          <div class="flex flex-col gap-2 border-b p-4 sm:flex-row sm:items-center">
+            <div class="w-full sm:w-64">
+              <ng-template #searchIcon><lucide-icon [img]="SearchIcon" class="size-4" /></ng-template>
+              <ui-input
+                size="small"
+                [prefixIcon]="searchIcon"
+                [value]="actionQuery()"
+                (valueChange)="onActionQuery($event)"
+                [placeholder]="t('settings.activity.filters.action')"
+                [aria-label]="t('settings.activity.filters.action')"
+              />
+            </div>
+            <div class="w-full sm:w-64">
+              <ng-template #tagIcon><lucide-icon [img]="TagIcon" class="size-4" /></ng-template>
+              <ui-input
+                size="small"
+                [prefixIcon]="tagIcon"
+                [value]="entityQuery()"
+                (valueChange)="entityQuery.set($event)"
+                [placeholder]="t('settings.activity.filters.entity')"
+                [aria-label]="t('settings.activity.filters.entity')"
+              />
+            </div>
           </div>
-        } @else if (loadError()) {
-          <ui-empty-state
-            [icon]="loadErrorIcon"
-            role="alert"
-            title="Could not load activity."
-            description="Something went wrong on our side. Please try again."
-            class="px-4"
-          >
-            <ng-template #loadErrorIcon><lucide-icon [img]="CloudIcon" /></ng-template>
-            <button ui-button variant="outline" size="sm" class="mt-4" (click)="load()">Retry</button>
-          </ui-empty-state>
-        } @else if (filtered().length === 0 && isFiltering()) {
-          <ui-empty-state
-            [icon]="noMatchIcon"
-            title="No matching events"
-            description="Nothing matches these filters. Try a broader search."
-            class="px-4"
-          >
-            <ng-template #noMatchIcon><lucide-icon [img]="SearchIcon" /></ng-template>
-            <button ui-button variant="outline" size="sm" class="mt-4" (click)="clearFilters()">Clear filters</button>
-          </ui-empty-state>
-        } @else if (filtered().length === 0) {
-          <ui-empty-state
-            [icon]="noActivityIcon"
-            title="No activity yet."
-            description="Events appear here as you sign in, create projects, invite teammates or change settings. Demo workspaces and apps without a database don’t record events."
-            class="px-4"
-          >
-            <ng-template #noActivityIcon><lucide-icon [img]="ActivityIcon" /></ng-template>
-          </ui-empty-state>
-        } @else {
-          <ui-table>
-            <thead ui-table-header>
-              <tr ui-table-row>
-                <th ui-table-head>Event</th>
-                <th ui-table-head>Actor</th>
-                <th ui-table-head>Entity</th>
-                <th ui-table-head class="text-right">Time</th>
-              </tr>
-            </thead>
-            <tbody ui-table-body>
-              @for (item of filtered(); track item.id) {
+
+          @if (pending()) {
+            <div class="text-muted-foreground flex items-center gap-2 px-4 py-4 text-sm">
+              <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
+              {{ t('settings.activity.states.loading') }}
+            </div>
+          } @else if (loadError()) {
+            <ui-empty-state
+              [icon]="loadErrorIcon"
+              role="alert"
+              [title]="t('settings.activity.states.error')"
+              description="Something went wrong on our side. Please try again."
+            >
+              <ng-template #loadErrorIcon><lucide-icon [img]="CloudIcon" /></ng-template>
+              <button ui-button variant="outline" size="sm" class="mt-4" (click)="load()">{{ t('settings.activity.states.retry') }}</button>
+            </ui-empty-state>
+          } @else if (filtered().length === 0 && isFiltering()) {
+            <!-- Filters active: say so and offer the way out. -->
+            <ui-empty-state
+              [icon]="noMatchIcon"
+              [title]="t('settings.activity.states.noMatchTitle')"
+              [description]="t('settings.activity.states.noMatchDescription')"
+            >
+              <ng-template #noMatchIcon><lucide-icon [img]="SearchIcon" /></ng-template>
+              <button ui-button variant="outline" size="sm" class="mt-4" (click)="clearFilters()">
+                {{ t('settings.activity.states.clearFilters') }}
+              </button>
+            </ui-empty-state>
+          } @else if (filtered().length === 0) {
+            <!-- Nothing recorded: explain why, so support can tell "empty" from "broken". -->
+            <ui-empty-state
+              [icon]="noActivityIcon"
+              [title]="t('settings.activity.states.empty')"
+              [description]="t('settings.activity.states.emptyDescription')"
+            >
+              <ng-template #noActivityIcon><lucide-icon [img]="ActivityIcon" /></ng-template>
+            </ui-empty-state>
+          } @else {
+            <ui-table>
+              <thead ui-table-header>
                 <tr ui-table-row>
-                  <td ui-table-cell>
-                    <span class="flex items-center gap-2 text-sm font-medium">
-                      <lucide-icon [img]="iconFor(item.action)" class="text-muted-foreground size-4 shrink-0" />
-                      <span class="font-mono text-xs">{{ item.action }}</span>
-                    </span>
-                  </td>
-                  <td ui-table-cell class="text-muted-foreground max-w-55 truncate text-xs" [title]="item.actorEmail ?? 'Deleted user'">
-                    {{ item.actorEmail ?? 'Deleted user' }}
-                  </td>
-                  <td ui-table-cell class="text-muted-foreground text-xs">{{ labelFor(item) }}</td>
-                  <td ui-table-cell class="text-right">
-                    <time [title]="formatFull(item.createdAt)" class="text-muted-foreground text-xs tabular-nums">
-                      {{ timeAgo(item.createdAt) }}
-                    </time>
-                  </td>
+                  <th ui-table-head>{{ t('settings.activity.table.event') }}</th>
+                  <th ui-table-head>{{ t('settings.activity.table.actor') }}</th>
+                  <th ui-table-head>{{ t('settings.activity.table.entity') }}</th>
+                  <th ui-table-head class="text-right">{{ t('settings.activity.table.time') }}</th>
                 </tr>
-              }
-            </tbody>
-          </ui-table>
-        }
-      </ui-card>
-    </div>
+              </thead>
+              <tbody ui-table-body>
+                @for (item of filtered(); track item.id) {
+                  <tr ui-table-row>
+                    <td ui-table-cell>
+                      <span class="flex items-center gap-2 text-sm font-medium">
+                        <lucide-icon [img]="iconFor(item.action)" class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+                        <span class="font-mono text-xs">{{ item.action }}</span>
+                      </span>
+                    </td>
+                    <td ui-table-cell class="text-muted-foreground max-w-55 truncate text-xs" [attr.title]="item.actorEmail">
+                      {{ item.actorEmail ?? t('settings.activity.feed.deletedUser') }}
+                    </td>
+                    <td ui-table-cell class="text-muted-foreground text-xs">{{ labelFor(item) }}</td>
+                    <td ui-table-cell class="text-right">
+                      <time [title]="formatFull(item.createdAt)" class="text-muted-foreground text-xs tabular-nums">
+                        {{ timeAgo(item.createdAt) }}
+                      </time>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </ui-table>
+          }
+        </ui-card>
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class SettingsActivity {
   private readonly http = inject(HttpClient)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
   private readonly i18n = inject(I18nService)
+  protected readonly pageTitle = injectPageTitle()
 
   protected readonly SearchIcon = Search
   protected readonly TagIcon = Tag
@@ -213,7 +218,6 @@ export class SettingsActivity {
   private debounce?: ReturnType<typeof setTimeout>
 
   constructor() {
-    inject(Title).setTitle('Activity log · Settings')
     if (this.browser) this.load()
     else this.pending.set(false)
   }
@@ -256,6 +260,12 @@ export class SettingsActivity {
       })
   }
 
+  // Reads lang() so a locale switch re-renders the copy.
+  t(key: string, params?: Record<string, string | number>): string {
+    this.i18n.lang()
+    return this.i18n.t(key, params)
+  }
+
   iconFor(action: string): LucideIconData {
     return actionIconFor(action)
   }
@@ -265,13 +275,13 @@ export class SettingsActivity {
   }
 
   formatFull(value: string): string {
-    return new Date(value).toLocaleString(this.i18n.locale, { dateStyle: 'medium', timeStyle: 'short' })
+    return new Date(value).toLocaleString(this.i18n.lang(), { dateStyle: 'medium', timeStyle: 'short' })
   }
 
   timeAgo(value: string): string {
     const date = new Date(value)
     const diffMs = date.getTime() - Date.now()
-    const rtf = new Intl.RelativeTimeFormat(this.i18n.locale, { numeric: 'auto' })
+    const rtf = new Intl.RelativeTimeFormat(this.i18n.lang(), { numeric: 'auto' })
     const absSec = Math.abs(diffMs) / 1000
     if (absSec < 60) return rtf.format(Math.round(diffMs / 1000), 'second')
     const mins = Math.round(diffMs / 60000)

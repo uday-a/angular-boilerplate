@@ -1,8 +1,7 @@
 // Settings → Notifications — mirrors nuxt-boilerplate
 // `app/pages/settings/notifications.vue` 1:1. Fully mock UI (preference
 // toggles) until the notification-preference endpoint exists.
-import { Component, inject, signal } from '@angular/core'
-import { Title } from '@angular/platform-browser'
+import { Component, signal } from '@angular/core'
 import { UiButtonComponent } from '@/app/components/ui/button'
 import {
   UiCardComponent,
@@ -14,6 +13,13 @@ import {
 import { UiLabelComponent } from '@/app/components/ui/label'
 import { UiSeparatorComponent } from '@/app/components/ui/separator'
 import { UiSwitchComponent } from '@/app/components/ui/switch'
+import {
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page'
+import { injectPageTitle } from '@/app/core/i18n'
 
 type PrefKey = 'mentions' | 'comments' | 'invites' | 'weeklyDigest' | 'productUpdates' | 'billing'
 
@@ -44,6 +50,10 @@ const DEFAULTS: Record<PrefKey, Channel> = {
   selector: 'app-settings-notifications',
   standalone: true,
   imports: [
+    UiPageComponent,
+    UiPageBodyComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiButtonComponent,
     UiCardComponent,
     UiCardContentComponent,
@@ -55,56 +65,55 @@ const DEFAULTS: Record<PrefKey, Channel> = {
     UiSwitchComponent,
   ],
   template: `
-    <div class="max-w-3xl space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">Notifications</h1>
-        <p class="text-muted-foreground text-sm">Pick which channels receive which events.</p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading [title]="pageTitle()" description="Pick which channels receive which events." />
+      </ui-page-header>
 
-      <ui-card>
-        <ui-card-header>
-          <ui-card-title class="text-base">Delivery preferences</ui-card-title>
-          <ui-card-description>Critical security alerts always send to email and can’t be disabled.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content>
-          <div class="grid grid-cols-[1fr_4rem_4rem] items-end gap-x-4 gap-y-1 pb-2 text-xs font-medium text-muted-foreground">
-            <span>Event</span>
-            <span class="px-1 text-center">Email</span>
-            <span class="px-1 text-center">In-app</span>
-          </div>
-          <ui-separator />
-          @for (r of rows; track r.key; let i = $index) {
-            <div>
-              <div class="grid grid-cols-[1fr_4rem_4rem] items-center gap-x-4 py-3">
-                <div class="space-y-0.5">
-                  <ui-label class="text-sm font-medium">{{ r.label }}</ui-label>
-                  <p class="text-muted-foreground text-xs">{{ r.description }}</p>
-                </div>
-                <ui-switch class="justify-self-center" [checked]="prefs()[r.key].email" (checkedChange)="setPref(r.key, 'email', $event)" />
-                <ui-switch class="justify-self-center" [checked]="prefs()[r.key].inApp" (checkedChange)="setPref(r.key, 'inApp', $event)" />
-              </div>
-              @if (i < rows.length - 1) {
-                <ui-separator />
-              }
+      <ui-page-body class="max-w-3xl space-y-4">
+        <ui-card>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base">Delivery preferences</h3>
+            <ui-card-description>Critical security alerts always send to email and can’t be disabled.</ui-card-description>
+          </ui-card-header>
+          <ui-card-content>
+            <div class="grid grid-cols-[1fr_4rem_4rem] items-end gap-x-4 gap-y-1 pb-2 text-xs font-medium text-muted-foreground">
+              <span>Event</span>
+              <span class="px-1 text-center">Email</span>
+              <span class="px-1 text-center">In-app</span>
             </div>
-          }
-        </ui-card-content>
-      </ui-card>
+            <ui-separator />
+            @for (r of rows; track r.key; let i = $index) {
+              <div>
+                <div class="grid grid-cols-[1fr_4rem_4rem] items-center gap-x-4 py-3">
+                  <div class="space-y-0.5">
+                    <ui-label [htmlFor]="'pref-' + r.key + '-email'" class="text-sm font-medium">{{ r.label }}</ui-label>
+                    <p class="text-muted-foreground text-xs">{{ r.description }}</p>
+                  </div>
+                  <button ui-switch [id]="'pref-' + r.key + '-email'" class="justify-self-center" [checked]="prefs()[r.key].email" (checkedChange)="setPref(r.key, 'email', $event)"></button>
+                  <button ui-switch [id]="'pref-' + r.key + '-inapp'" class="justify-self-center" [checked]="prefs()[r.key].inApp" (checkedChange)="setPref(r.key, 'inApp', $event)"></button>
+                </div>
+                @if (i < rows.length - 1) {
+                  <ui-separator />
+                }
+              </div>
+            }
+          </ui-card-content>
+        </ui-card>
 
-      <div class="flex justify-end gap-2">
-        <button ui-button variant="outline" (click)="reset()">Reset</button>
-        <button ui-button>Save preferences</button>
-      </div>
-    </div>
+        <div class="flex items-center justify-end gap-2">
+          <button ui-button variant="outline" (click)="reset()">Reset</button>
+          <button ui-button>Save preferences</button>
+        </div>
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class SettingsNotifications {
+  protected readonly pageTitle = injectPageTitle()
   protected readonly rows = ROWS
   protected readonly prefs = signal<Record<PrefKey, Channel>>({ ...DEFAULTS })
 
-  constructor() {
-    inject(Title).setTitle('Notifications · Settings')
-  }
 
   setPref(key: PrefKey, channel: keyof Channel, value: boolean): void {
     this.prefs.update((prev) => ({ ...prev, [key]: { ...prev[key], [channel]: value } }))

@@ -7,7 +7,6 @@
 import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core'
 import { AsyncPipe, isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
-import { Title } from '@angular/platform-browser'
 import { CircleAlert, CircleCheck, LoaderCircle, LucideAngularModule } from 'lucide-angular'
 import {
   UiAvatarComponent,
@@ -29,6 +28,13 @@ import { UiTextareaComponent } from '@/app/components/ui/textarea'
 import { type ApiResponse, apiErrorMessage } from '@/app/core/api/api'
 import { AuthService } from '@/app/core/auth/auth.service'
 import type { Profile } from './settings-general'
+import {
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page'
+import { injectPageTitle } from '@/app/core/i18n'
 
 type SaveStatus
   = | { kind: 'idle' }
@@ -40,6 +46,10 @@ type SaveStatus
   selector: 'app-settings-account',
   standalone: true,
   imports: [
+    UiPageComponent,
+    UiPageBodyComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     AsyncPipe,
     LucideAngularModule,
     UiAvatarComponent,
@@ -57,123 +67,125 @@ type SaveStatus
     UiTextareaComponent,
   ],
   template: `
-    <div class="max-w-3xl space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">Account</h1>
-        <p class="text-muted-foreground text-sm">Your personal profile and credentials.</p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading [title]="pageTitle()" description="Your personal profile and credentials." />
+      </ui-page-header>
 
-      <ui-card>
-        <ui-card-header>
-          <ui-card-title class="text-base">Profile</ui-card-title>
-          <ui-card-description>How you appear in the workspace.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content class="space-y-4">
-          <div class="flex items-center gap-4">
-            <ui-avatar class="size-16">
-              @if ((auth.user$ | async)?.avatar; as avatarUrl) {
-                <ui-avatar-image [src]="avatarUrl" [alt]="name()" />
-              }
-              <ui-avatar-fallback>{{ initials() }}</ui-avatar-fallback>
-            </ui-avatar>
-            <div class="space-y-1">
-              <button ui-button variant="outline" size="sm">Upload photo</button>
-              <p class="text-muted-foreground text-xs">PNG or JPG, up to 2MB.</p>
+      <ui-page-body class="max-w-3xl space-y-4">
+        <ui-card>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base">Profile</h3>
+            <ui-card-description>How you appear in the workspace.</ui-card-description>
+          </ui-card-header>
+          <ui-card-content class="space-y-4">
+            <div class="flex items-center gap-4">
+              <ui-avatar class="size-16">
+                @if ((auth.user$ | async)?.avatar; as avatarUrl) {
+                  <ui-avatar-image [src]="avatarUrl" [alt]="name()" />
+                }
+                <ui-avatar-fallback>{{ initials() }}</ui-avatar-fallback>
+              </ui-avatar>
+              <div class="space-y-1">
+                <button ui-button variant="outline" size="sm">Upload photo</button>
+                <p class="text-muted-foreground text-xs">PNG or JPG, up to 2MB.</p>
+              </div>
             </div>
-          </div>
-          <div class="grid gap-2">
-            <ui-label htmlFor="acct-name">Full name</ui-label>
-            <ui-input id="acct-name" [value]="name()" (valueChange)="name.set($event)" />
-          </div>
-          <div class="grid gap-2">
-            <ui-label htmlFor="acct-bio">Bio</ui-label>
-            <ui-textarea id="acct-bio" [rows]="3" placeholder="A short paragraph about yourself." [value]="bio()" (valueChange)="bio.set($event)" />
-            <p class="text-muted-foreground text-xs">500 characters max. Visible to workspace members.</p>
-          </div>
-          <div class="grid gap-2">
-            <ui-label htmlFor="acct-email">Email</ui-label>
-            <ui-input id="acct-email" type="email" [disabled]="true" [value]="email()" (valueChange)="email.set($event)" />
-            <p class="text-muted-foreground text-xs">
-              Email comes from your GitHub account. Change it there or add email/password auth to edit here.
-            </p>
-          </div>
-        </ui-card-content>
-      </ui-card>
-
-      <ui-card>
-        <ui-card-header>
-          <ui-card-title class="text-base">Password</ui-card-title>
-          <ui-card-description>Use 12+ characters with a mix of letters, numbers, and symbols.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content class="space-y-4">
-          <div class="grid gap-2">
-            <ui-label htmlFor="pw-current">Current password</ui-label>
-            <ui-input id="pw-current" type="password" [value]="currentPassword()" (valueChange)="currentPassword.set($event)" />
-          </div>
-          <div class="grid gap-2">
-            <ui-label htmlFor="pw-new">New password</ui-label>
-            <ui-input id="pw-new" type="password" [value]="newPassword()" (valueChange)="newPassword.set($event)" />
-          </div>
-          <div class="grid gap-2">
-            <ui-label htmlFor="pw-confirm">Confirm new password</ui-label>
-            <ui-input id="pw-confirm" type="password" [value]="confirmPassword()" (valueChange)="confirmPassword.set($event)" />
-          </div>
-        </ui-card-content>
-      </ui-card>
-
-      <div class="flex items-center justify-end gap-3">
-        @if (status().kind === 'saved') {
-          <div class="flex items-center gap-2 text-sm text-success">
-            <lucide-icon [img]="SavedIcon" class="size-4" />
-            {{ asSaved(status()).demo ? 'Saved (demo — not persisted)' : 'Saved' }}
-          </div>
-        } @else if (status().kind === 'error') {
-          <div class="text-destructive flex items-center gap-2 text-sm">
-            <lucide-icon [img]="ErrorIcon" class="size-4" />
-            {{ asError(status()).message }}
-          </div>
-        }
-        <button ui-button variant="outline">Cancel</button>
-        <button ui-button [disabled]="status().kind === 'saving' || !name()" (click)="save()">
-          @if (status().kind === 'saving') {
-            <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
-          }
-          Save changes
-        </button>
-      </div>
-
-      <ui-card class="border-destructive/40">
-        <ui-card-header>
-          <ui-card-title class="text-base text-destructive">Danger zone</ui-card-title>
-          <ui-card-description>Irreversible account actions.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content class="space-y-4">
-          <div class="flex items-start justify-between gap-4">
-            <div class="space-y-0.5">
-              <p class="text-sm font-medium">Delete account</p>
+            <div class="grid gap-2">
+              <ui-label htmlFor="acct-name">Full name</ui-label>
+              <ui-input id="acct-name" [value]="name()" (valueChange)="name.set($event)" />
+            </div>
+            <div class="grid gap-2">
+              <ui-label htmlFor="acct-bio">Bio</ui-label>
+              <ui-textarea id="acct-bio" [rows]="3" placeholder="A short paragraph about yourself." [value]="bio()" (valueChange)="bio.set($event)" />
+              <p class="text-muted-foreground text-xs">500 characters max. Visible to workspace members.</p>
+            </div>
+            <div class="grid gap-2">
+              <ui-label htmlFor="acct-email">Email</ui-label>
+              <ui-input id="acct-email" type="email" [disabled]="true" [value]="email()" (valueChange)="email.set($event)" />
               <p class="text-muted-foreground text-xs">
-                Permanently remove your account and all personal data. Workspace data is retained per your billing plan.
+                Your email comes from your sign-in provider. Change it there to update it here.
               </p>
             </div>
-            <button ui-button variant="outline" class="text-destructive hover:text-destructive">Delete account</button>
-          </div>
-          <ui-separator />
-          <div class="flex items-start justify-between gap-4">
-            <div class="space-y-0.5">
-              <p class="text-sm font-medium">Export data</p>
-              <p class="text-muted-foreground text-xs">Download a JSON archive of your personal data.</p>
+          </ui-card-content>
+        </ui-card>
+
+        <ui-card>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base">Password</h3>
+            <ui-card-description>Use 12+ characters with a mix of letters, numbers, and symbols.</ui-card-description>
+          </ui-card-header>
+          <ui-card-content class="space-y-4">
+            <div class="grid gap-2">
+              <ui-label htmlFor="pw-current">Current password</ui-label>
+              <ui-input id="pw-current" type="password" [value]="currentPassword()" (valueChange)="currentPassword.set($event)" />
             </div>
-            <button ui-button variant="outline">Request export</button>
-          </div>
-        </ui-card-content>
-      </ui-card>
-    </div>
+            <div class="grid gap-2">
+              <ui-label htmlFor="pw-new">New password</ui-label>
+              <ui-input id="pw-new" type="password" [value]="newPassword()" (valueChange)="newPassword.set($event)" />
+            </div>
+            <div class="grid gap-2">
+              <ui-label htmlFor="pw-confirm">Confirm new password</ui-label>
+              <ui-input id="pw-confirm" type="password" [value]="confirmPassword()" (valueChange)="confirmPassword.set($event)" />
+            </div>
+          </ui-card-content>
+        </ui-card>
+
+        <div class="flex items-center justify-end gap-2">
+          @if (status().kind === 'saved') {
+            <div class="flex items-center gap-2 text-sm text-success">
+              <lucide-icon [img]="SavedIcon" class="size-4" />
+              {{ asSaved(status()).demo ? 'Saved (demo — not persisted)' : 'Saved' }}
+            </div>
+          } @else if (status().kind === 'error') {
+            <div class="text-destructive flex items-center gap-2 text-sm">
+              <lucide-icon [img]="ErrorIcon" class="size-4" />
+              {{ asError(status()).message }}
+            </div>
+          }
+          <button ui-button variant="outline">Cancel</button>
+          <button ui-button [disabled]="status().kind === 'saving' || !name()" (click)="save()">
+            @if (status().kind === 'saving') {
+              <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
+            }
+            Save changes
+          </button>
+        </div>
+
+        <ui-card class="border-destructive/40">
+          <ui-card-header>
+            <h3 ui-card-title class="text-base text-destructive">Danger zone</h3>
+            <ui-card-description>Irreversible account actions.</ui-card-description>
+          </ui-card-header>
+          <ui-card-content class="space-y-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="space-y-0.5">
+                <p class="text-sm font-medium">Delete account</p>
+                <p class="text-muted-foreground text-xs">
+                  Permanently remove your account and all personal data. Workspace data is retained per your billing plan.
+                </p>
+              </div>
+              <button ui-button variant="destructive">Delete account</button>
+            </div>
+            <ui-separator />
+            <div class="flex items-start justify-between gap-4">
+              <div class="space-y-0.5">
+                <p class="text-sm font-medium">Export data</p>
+                <p class="text-muted-foreground text-xs">Download a JSON archive of your personal data.</p>
+              </div>
+              <button ui-button variant="outline">Request export</button>
+            </div>
+          </ui-card-content>
+        </ui-card>
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class SettingsAccount {
   private readonly http = inject(HttpClient)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
   protected readonly auth = inject(AuthService)
+  protected readonly pageTitle = injectPageTitle()
 
   protected readonly SavedIcon = CircleCheck
   protected readonly ErrorIcon = CircleAlert
@@ -198,7 +210,6 @@ export class SettingsAccount {
   protected readonly status = signal<SaveStatus>({ kind: 'idle' })
 
   constructor() {
-    inject(Title).setTitle('Account · Settings')
     if (!this.browser) return
     this.http.get<ApiResponse<{ profile: Profile }>>('/api/me/profile', { withCredentials: true }).subscribe({
       next: (res) => {

@@ -5,7 +5,7 @@ import { useDb, schema } from '../db/index'
 import { apiError, apiHandler } from '../utils/response'
 import { recordAudit } from '../utils/audit'
 import { logger } from '../utils/logger'
-import { demoSampleKeys, isSampleKeyId, mintApiKey } from '../utils/api-keys'
+import { isSampleKeyId, mintApiKey } from '../utils/api-keys'
 import { requireRateLimit } from '../utils/rate-limit'
 import { getSession, isDemoSession } from './_session'
 
@@ -26,9 +26,8 @@ export const keysRouter: Router = Router()
 keysRouter.get('/', apiHandler(async (req) => {
   const session = await getSession(req)
 
-  // Demo has no DB rows — surface clearly-flagged sample rows so the
-  // page shows existing data. Real users always read their own rows.
-  if (isDemoSession(session)) return { keys: demoSampleKeys() }
+  // Demo has no DB rows — an empty list, like Nuxt ("No API keys yet").
+  if (isDemoSession(session)) return { keys: [] }
 
   const db = useDb()
   // Explicit column list — keyHash is selected nowhere, so it can

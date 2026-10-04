@@ -2,7 +2,9 @@
 import { describe, expect, it, beforeEach } from 'vitest'
 import { provideZonelessChangeDetection } from '@angular/core'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
+import { provideRouter } from '@angular/router'
 import { Support } from '@/app/pages/support/support'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 describe('Support', () => {
   let fixture: ComponentFixture<Support>
@@ -10,8 +12,9 @@ describe('Support', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Support],
-      providers: [provideZonelessChangeDetection()],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(Support)
     fixture.detectChanges()
     await fixture.whenStable()
@@ -24,8 +27,11 @@ describe('Support', () => {
   it('renders three channel cards', () => {
     const text = fixture.nativeElement.textContent as string
     expect(text).toContain('Documentation')
-    expect(text).toContain('Community Discord')
+    expect(text).toContain('Community')
     expect(text).toContain('Email support')
+    // Nuxt dropped the Discord channel and the LLM-product copy.
+    expect(text).not.toContain('Discord')
+    expect(text).not.toContain('Explorer')
   })
 
   it('renders eight FAQ accordion items', () => {

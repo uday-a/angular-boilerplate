@@ -5,7 +5,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import type { Signal, WritableSignal } from '@angular/core'
+import { provideRouter } from '@angular/router'
 import { Feedback } from '@/app/pages/feedback/feedback'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 describe('Feedback', () => {
   let fixture: ComponentFixture<Feedback>
@@ -14,8 +16,9 @@ describe('Feedback', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Feedback],
-      providers: [provideZonelessChangeDetection(), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     http = TestBed.inject(HttpTestingController)
     fixture = TestBed.createComponent(Feedback)
     fixture.detectChanges()
@@ -30,6 +33,9 @@ describe('Feedback', () => {
       subject: WritableSignal<string>
       message: WritableSignal<string>
       canSend: Signal<boolean>
+      files: Signal<File[]>
+      fileError: Signal<string | null>
+      onFilesPicked(next: File[]): void
       onSend(): void
     }
   }
@@ -39,6 +45,21 @@ describe('Feedback', () => {
     expect(text).toContain('Send us a note')
     expect(text).toContain('Recent from the team')
     expect(fixture.nativeElement.querySelectorAll('ui-radio-group-item').length).toBe(3)
+    // Nuxt sample sidebar, labelled as sample data.
+    expect(text).toContain('Sample feedback. Your team')
+    expect(text).toContain('Chart tooltip flickers when a series crosses zero')
+    expect(text).toContain('Screenshots (optional)')
+  })
+
+  it('accepts up to 3 images and rejects non-images', () => {
+    const c = vm()
+    const img = (n: string) => new File(['x'], n, { type: 'image/png' })
+    c.onFilesPicked([new File(['x'], 'notes.txt', { type: 'text/plain' })])
+    expect(c.files()).toHaveLength(0)
+    expect(c.fileError()).toContain('notes.txt is not an image')
+    c.onFilesPicked([img('a.png'), img('b.png'), img('c.png'), img('d.png')])
+    expect(c.files().map(f => f.name)).toEqual(['a.png', 'b.png', 'c.png'])
+    expect(c.fileError()).toContain('up to 3 images')
   })
 
   it('gates send on subject/message length', () => {

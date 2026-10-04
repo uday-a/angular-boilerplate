@@ -6,7 +6,7 @@ import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { provideRouter } from '@angular/router'
 import { SettingsActivity } from '@/app/pages/settings/settings-activity'
-import { I18nService } from '@/app/core/i18n'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 const ITEMS = [
   { id: 1, userId: 1, action: 'team.invite', entity: 'invite', entityId: '9', metadata: null, createdAt: '2026-09-28T10:00:00Z', actorEmail: 'a@acme.com' },
@@ -25,9 +25,10 @@ describe('SettingsActivity', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: I18nService, useValue: { locale: 'en' } },
+        provideTestI18n(),
       ],
     }).compileComponents()
+    seedI18n()
     httpMock = TestBed.inject(HttpTestingController)
     fixture = TestBed.createComponent(SettingsActivity)
     fixture.detectChanges()

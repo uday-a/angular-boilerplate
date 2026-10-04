@@ -1,6 +1,6 @@
 // One sample source for plan + usage, shared by Settings -> Billing,
-// Settings -> Limits and the dashboard quota gauge, so the numbers on
-// every page agree. Swap for real metering data when you have it.
+// Settings -> Limits, the Settings index meta line and the dashboard
+// quota gauge, so the numbers on every page agree. Swap for real metering data when you have it.
 // Port of nuxt-boilerplate `app/lib/usage-mock.ts`.
 export interface UsageMetric {
   id: string
@@ -30,6 +30,15 @@ export const SAMPLE_USAGE: UsageMetric[] = [
   { id: 'batch', label: 'Batch requests', used: 2_140, limit: 5_000, period: 'cycle', billable: false },
   { id: 'webhooks', label: 'Webhook deliveries', used: 184_600, limit: 250_000, period: 'cycle', billable: false },
   { id: 'bundles', label: 'Active file bundles', used: 47, limit: 50, period: 'total', billable: false },
+]
+
+export const SAMPLE_INVOICES = [
+  { id: 'INV-2109', date: '2026-09-01', period: 'Aug 2026', amount: 149.00, status: 'paid', method: 'Visa ··4242' },
+  { id: 'INV-2084', date: '2026-08-01', period: 'Jul 2026', amount: 162.40, status: 'paid', method: 'Visa ··4242' },
+  { id: 'INV-2058', date: '2026-07-01', period: 'Jun 2026', amount: 149.00, status: 'paid', method: 'Visa ··4242' },
+  { id: 'INV-2031', date: '2026-06-01', period: 'May 2026', amount: 149.00, status: 'paid', method: 'Visa ··4242' },
+  { id: 'INV-2007', date: '2026-05-01', period: 'Apr 2026', amount: 149.00, status: 'paid', method: 'Visa ··4242' },
+  { id: 'INV-1983', date: '2026-04-01', period: 'Mar 2026', amount: 149.00, status: 'paid', method: 'Visa ··4242' },
 ]
 
 export function usagePct(m: Pick<UsageMetric, 'used' | 'limit'>): number {

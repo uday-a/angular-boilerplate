@@ -8,7 +8,7 @@ import { cn } from '@/app/core/utils/cn'
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'ui-usage-bar, [ui-usage-bar]',
   standalone: true,
-  host: { '[attr.class]': '"contents"' },
+  host: { class: 'block' },
   template: `
     <div class="space-y-1.5">
       <div class="flex items-baseline justify-between gap-3 text-sm">

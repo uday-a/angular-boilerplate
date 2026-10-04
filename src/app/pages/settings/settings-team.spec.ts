@@ -6,7 +6,9 @@ import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { provideRouter } from '@angular/router'
 import { SettingsTeam, memberInitials } from '@/app/pages/settings/settings-team'
-import { I18nService } from '@/app/core/i18n'
+import { of } from 'rxjs'
+import { AuthService } from '@/app/core/auth/auth.service'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 const MEMBERS = [
   { id: 1, name: 'Olivia Bennett', email: 'olivia@acme.com', role: 'admin', createdAt: '2025-11-04T09:12:00Z' },
@@ -33,9 +35,12 @@ describe('SettingsTeam', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: I18nService, useValue: { locale: 'en' } },
+        provideTestI18n(),
+        // Admins see the invite button and the pending-invites card.
+        { provide: AuthService, useValue: { user$: of({ role: 'admin' }) } },
       ],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(SettingsTeam)
     fixture.detectChanges()
     const httpMock = TestBed.inject(HttpTestingController)
@@ -51,7 +56,23 @@ describe('SettingsTeam', () => {
     expect(text).toContain('chloe@acme.com')
     expect(text).toContain('1 members · 1 pending invites')
     expect(text).toContain('Admin')
+    expect(text).toContain('Status')
+    expect(text).toContain('1 of 1')
+  })
+
+  it('labels roles Member / Editor / Admin, never the raw role id', () => {
+    const text = fixture.nativeElement.textContent as string
     expect(text).toContain('Invited as Editor · Expires')
+    expect(text).not.toContain('Invited as editor')
+  })
+
+  it('filters members by role and counts what is shown', async () => {
+    ;(fixture.componentInstance as unknown as { onRole: (r: string) => void }).onRole('editor')
+    fixture.detectChanges()
+    await fixture.whenStable()
+    const text = fixture.nativeElement.textContent as string
+    expect(text).toContain('0 of 1')
+    expect(text).not.toContain('Olivia Bennett')
   })
 
   it('rejects a malformed email before the round-trip', async () => {

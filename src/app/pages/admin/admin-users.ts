@@ -8,7 +8,6 @@ import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core'
 import { toSignal } from '@angular/core/rxjs-interop'
 import { isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
-import { Title } from '@angular/platform-browser'
 import {
   ArrowUpDown,
   Calendar,
@@ -58,7 +57,7 @@ import {
 } from '@/app/components/ui/table'
 import type { ApiResponse } from '@/app/core/api/api'
 import { AuthService } from '@/app/core/auth/auth.service'
-import { I18nService } from '@/app/core/i18n'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 
 export interface AdminUser {
   id: number
@@ -119,7 +118,7 @@ export function userInitials(n: string): string {
   template: `
     <ui-page>
       <ui-page-header>
-        <ui-page-header-heading [title]="t('nav.items.users')" [description]="description()" />
+        <ui-page-header-heading [title]="pageTitle()" [description]="description()" />
       </ui-page-header>
 
       <ui-page-body>
@@ -364,6 +363,7 @@ export class AdminUsers {
   private readonly http = inject(HttpClient)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
   private readonly i18n = inject(I18nService)
+  protected readonly pageTitle = injectPageTitle()
   private readonly sessionUser = toSignal(inject(AuthService).user$, { initialValue: null })
 
   protected readonly ShieldIcon = ShieldAlert
@@ -459,7 +459,6 @@ export class AdminUsers {
   protected readonly deleting = signal<AdminUser | null>(null)
 
   constructor() {
-    inject(Title).setTitle(this.t('nav.items.users'))
     this.load()
   }
 

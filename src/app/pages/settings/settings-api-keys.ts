@@ -7,7 +7,6 @@
 import { Component, PLATFORM_ID, inject, signal } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
-import { Title } from '@angular/platform-browser'
 import {
   AlertTriangle,
   CircleAlert,
@@ -37,7 +36,9 @@ import {
   UiDialogHeaderComponent,
   UiDialogTitleComponent,
 } from '@/app/components/ui/dialog'
+import { UiEmptyStateComponent } from '@/app/components/ui/empty-state'
 import { UiInputComponent } from '@/app/components/ui/input'
+import { UiPageBodyComponent, UiPageComponent, UiPageHeaderComponent, UiPageHeaderHeadingComponent } from '@/app/components/ui/page'
 import { UiLabelComponent } from '@/app/components/ui/label'
 import {
   UiSelectComponent,
@@ -55,8 +56,7 @@ import {
   UiTableRowComponent,
 } from '@/app/components/ui/table'
 import { type ApiResponse, apiErrorMessage } from '@/app/core/api/api'
-import { I18nService } from '@/app/core/i18n'
-import { cn } from '@/app/core/utils/cn'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 
 export interface ApiKeyRow {
   id: number
@@ -67,7 +67,6 @@ export interface ApiKeyRow {
   expiresAt: string | null
   revokedAt: string | null
   createdAt: string
-  sample?: boolean
 }
 
 export function scopeBadges(scopes: string): string[] {
@@ -92,7 +91,12 @@ export function scopeBadges(scopes: string): string[] {
     UiDialogFooterComponent,
     UiDialogHeaderComponent,
     UiDialogTitleComponent,
+    UiEmptyStateComponent,
     UiInputComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiLabelComponent,
     UiSelectComponent,
     UiSelectContentComponent,
@@ -107,217 +111,218 @@ export function scopeBadges(scopes: string): string[] {
     UiTableRowComponent,
   ],
   template: `
-    <div class="space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">API keys</h1>
-        <p class="text-muted-foreground text-sm">Personal tokens for scripts and integrations. Keep them secret.</p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading [title]="pageTitle()" [description]="t('settings.apikeys.description')" />
+      </ui-page-header>
 
-      <ui-card>
-        <ui-card-header>
-          <h2 ui-card-title class="text-base">Create a key</h2>
-          <ui-card-description>Name it, pick scopes and an expiry. The full key is shown once.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content>
-          <form class="grid gap-3 sm:grid-cols-[1fr_170px_150px_auto] sm:items-end" (submit)="createKey($event)">
-            <div class="grid gap-2">
-              <ui-label htmlFor="ak-name">Name</ui-label>
-              <ui-input
-                id="ak-name"
-                [value]="name()"
-                (valueChange)="name.set($event)"
-                placeholder="CI deploy key"
-                maxlength="64"
-              />
-            </div>
-            <div class="grid gap-2">
-              <ui-label>Scopes</ui-label>
-              <ui-select [value]="scope()" (valueChange)="scope.set($event)">
-                <button ui-select-trigger><ui-select-value placeholder="Scopes" /></button>
-                <ui-select-content>
-                  <ui-select-item value="read">Read only</ui-select-item>
-                  <ui-select-item value="read write">Read + write</ui-select-item>
-                </ui-select-content>
-              </ui-select>
-            </div>
-            <div class="grid gap-2">
-              <ui-label>Expires</ui-label>
-              <ui-select [value]="expiry()" (valueChange)="expiry.set($event)">
-                <button ui-select-trigger><ui-select-value placeholder="Expiry" /></button>
-                <ui-select-content>
-                  <ui-select-item value="30">30 days</ui-select-item>
-                  <ui-select-item value="90">90 days</ui-select-item>
-                  <ui-select-item value="never">Never</ui-select-item>
-                </ui-select-content>
-              </ui-select>
-            </div>
-            <button ui-button type="submit" [disabled]="creating() || !name().trim()">
-              @if (creating()) {
-                <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
-                Creating…
-              } @else {
-                <lucide-icon [img]="PlusIcon" class="size-4" />
-                Create key
-              }
-            </button>
-          </form>
-          @if (createError()) {
-            <div class="text-destructive mt-3 flex items-center gap-2 text-sm">
-              <lucide-icon [img]="AlertIcon" class="size-4" />
-              {{ createError() }}
-            </div>
-          }
-        </ui-card-content>
-      </ui-card>
-
-      <ui-card>
-        <ui-card-header>
-          <h2 ui-card-title class="text-base">Your keys</h2>
-          <ui-card-description>Revoke a key the moment you stop trusting it.</ui-card-description>
-        </ui-card-header>
-        <ui-card-content>
-          @if (fetchFailed()) {
-            <div class="flex flex-col items-center gap-2 py-4 text-center" role="alert">
-              <lucide-icon [img]="CloudIcon" class="text-muted-foreground size-8" />
-              <p class="text-sm font-medium">Couldn’t load API keys</p>
-              <p class="text-muted-foreground text-xs">Something went wrong on our side. Please try again.</p>
-              <button ui-button variant="outline" size="sm" class="mt-4" (click)="load()">Retry</button>
-            </div>
-          } @else if (pending()) {
-            <div class="text-muted-foreground flex items-center gap-2 py-4 text-sm">
-              <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
-              Loading keys…
-            </div>
-          } @else if (keys().length === 0) {
-            <div class="flex flex-col items-center gap-2 py-4 text-center">
-              <lucide-icon [img]="KeyIcon" class="text-muted-foreground size-8" />
-              <p class="text-sm font-medium">No API keys yet</p>
-              <p class="text-muted-foreground text-xs">Create your first key above to automate this workspace.</p>
-            </div>
-          } @else {
-            <ui-table>
-              <thead ui-table-header>
-                <tr ui-table-row>
-                  <th ui-table-head scope="col">Name</th>
-                  <th ui-table-head scope="col">Key</th>
-                  <th ui-table-head scope="col">Scopes</th>
-                  <th ui-table-head scope="col" class="tabular-nums">Created</th>
-                  <th ui-table-head scope="col" class="tabular-nums">Expires</th>
-                  <th ui-table-head scope="col" class="tabular-nums">Last used</th>
-                  <th ui-table-head scope="col" class="text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody ui-table-body>
-                @for (k of keys(); track k.id) {
-                  <tr ui-table-row [class]="rowClass(k)">
-                    <td ui-table-cell class="font-medium">
-                      <span class="mr-2">{{ k.name }}</span>
-                      @if (k.sample) {
-                        <span ui-badge variant="outline">Sample</span>
-                      }
-                      @if (k.revokedAt) {
-                        <span ui-badge variant="secondary">Revoked</span>
-                      }
-                    </td>
-                    <td ui-table-cell><code class="text-muted-foreground font-mono text-xs">{{ k.prefix }}…</code></td>
-                    <td ui-table-cell>
-                      <div class="flex gap-1">
-                        @for (s of badges(k.scopes); track s) {
-                          <span ui-badge variant="secondary">{{ s }}</span>
-                        }
-                      </div>
-                    </td>
-                    <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ fmtDate(k.createdAt) }}</td>
-                    <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ fmtDate(k.expiresAt) }}</td>
-                    <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ k.lastUsedAt ? fmtDate(k.lastUsedAt) : 'Never used' }}</td>
-                    <td ui-table-cell class="text-right">
-                      @if (!k.revokedAt) {
-                        <button
-                          ui-button
-                          variant="ghost"
-                          size="icon"
-                          [attr.aria-label]="'Revoke key ' + k.name"
-                          [disabled]="revokingId() === k.id"
-                          (click)="revokeTarget.set(k)"
-                        >
-                          @if (revokingId() === k.id) {
-                            <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
-                          } @else {
-                            <lucide-icon [img]="TrashIcon" class="text-destructive size-4" />
-                          }
-                        </button>
-                      }
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </ui-table>
-          }
-
-          @if (actionError()) {
-            <div class="text-destructive mt-3 flex items-center gap-2 text-sm">
-              <lucide-icon [img]="AlertIcon" class="size-4" />
-              {{ actionError() }}
-            </div>
-          }
-        </ui-card-content>
-      </ui-card>
-
-      <ui-dialog [open]="showRaw()" (openChange)="onRawOpenChange($event)">
-        <ui-dialog-content>
-          <ui-dialog-header>
-            <ui-dialog-title>Copy your key</ui-dialog-title>
-            <ui-dialog-description>This is the only time the full key is displayed.</ui-dialog-description>
-          </ui-dialog-header>
-          <div class="grid gap-4 py-1">
-            <div class="bg-muted flex items-center gap-2 rounded-md border px-3 py-2">
-              <code class="flex-1 font-mono text-xs break-all">{{ rawKey() }}</code>
-              <button ui-button variant="outline" size="sm" class="shrink-0" (click)="copyRaw()">
-                @if (copied()) {
-                  <lucide-icon [img]="CheckIcon" class="size-4" />
-                  Copied
+      <ui-page-body class="space-y-4">
+        <ui-card>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base">{{ t('settings.apikeys.createTitle') }}</h3>
+            <ui-card-description>{{ t('settings.apikeys.createDescription') }}</ui-card-description>
+          </ui-card-header>
+          <ui-card-content>
+            <form class="grid gap-3 sm:grid-cols-[1fr_170px_150px_auto] sm:items-end" (submit)="createKey($event)">
+              <div class="grid gap-2">
+                <ui-label htmlFor="ak-name">{{ t('settings.apikeys.nameLabel') }}</ui-label>
+                <ui-input
+                  id="ak-name"
+                  [value]="name()"
+                  (valueChange)="name.set($event)"
+                  [placeholder]="t('settings.apikeys.namePlaceholder')"
+                  maxlength="64"
+                />
+              </div>
+              <div class="grid gap-2">
+                <ui-label htmlFor="ak-scope">{{ t('settings.apikeys.scopeLabel') }}</ui-label>
+                <ui-select [value]="scope()" (valueChange)="scope.set($event)">
+                  <button ui-select-trigger id="ak-scope"><ui-select-value /></button>
+                  <ui-select-content>
+                    <ui-select-item value="read">{{ t('settings.apikeys.scopeRead') }}</ui-select-item>
+                    <ui-select-item value="read write">{{ t('settings.apikeys.scopeReadWrite') }}</ui-select-item>
+                  </ui-select-content>
+                </ui-select>
+              </div>
+              <div class="grid gap-2">
+                <ui-label htmlFor="ak-expiry">{{ t('settings.apikeys.expiryLabel') }}</ui-label>
+                <ui-select [value]="expiry()" (valueChange)="expiry.set($event)">
+                  <button ui-select-trigger id="ak-expiry"><ui-select-value /></button>
+                  <ui-select-content>
+                    <ui-select-item value="30">{{ t('settings.apikeys.expiry30') }}</ui-select-item>
+                    <ui-select-item value="90">{{ t('settings.apikeys.expiry90') }}</ui-select-item>
+                    <ui-select-item value="never">{{ t('settings.apikeys.expiryNever') }}</ui-select-item>
+                  </ui-select-content>
+                </ui-select>
+              </div>
+              <button ui-button type="submit" [disabled]="creating() || !name().trim()">
+                @if (creating()) {
+                  <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
                 } @else {
-                  <lucide-icon [img]="CopyIcon" class="size-4" />
-                  Copy
+                  <lucide-icon [img]="PlusIcon" class="size-4" />
                 }
+                {{ creating() ? t('settings.apikeys.submitting') : t('settings.apikeys.submit') }}
               </button>
-            </div>
-            <div class="border-warning/30 bg-warning/10 text-warning flex items-start gap-2 rounded-md border px-3 py-2">
-              <lucide-icon [img]="WarnIcon" class="size-4 shrink-0" />
-              <p class="text-xs">
-                Store it somewhere safe now — you won’t be able to see it again. Anyone with this key can act as
-                you within its scopes.
-              </p>
-            </div>
-          </div>
-          <ui-dialog-footer>
-            <button ui-button (click)="closeRaw()">Done</button>
-          </ui-dialog-footer>
-        </ui-dialog-content>
-      </ui-dialog>
+            </form>
+            @if (createError()) {
+              <div class="text-destructive mt-3 flex items-center gap-2 text-sm">
+                <lucide-icon [img]="AlertIcon" class="size-4" />
+                {{ createError() }}
+              </div>
+            }
+          </ui-card-content>
+        </ui-card>
 
-      <ui-dialog [open]="revokeTarget() !== null" (openChange)="onRevokeOpenChange($event)">
-        <ui-dialog-content class="sm:max-w-md">
-          <ui-dialog-header>
-            <ui-dialog-title>Revoke “{{ revokeTarget()?.name }}”?</ui-dialog-title>
-            <ui-dialog-description>Calls using this key will start failing with 401. This can’t be undone.</ui-dialog-description>
-          </ui-dialog-header>
-          <ui-dialog-footer>
-            <button ui-button variant="outline" (click)="revokeTarget.set(null)">Cancel</button>
-            <button ui-button variant="destructive" (click)="revokeSelected()">
-              <lucide-icon [img]="TrashIcon" class="size-4" />
-              Revoke
-            </button>
-          </ui-dialog-footer>
-        </ui-dialog-content>
-      </ui-dialog>
-    </div>
+        <ui-card>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base">{{ t('settings.apikeys.listTitle') }}</h3>
+            <ui-card-description>{{ t('settings.apikeys.listDescription') }}</ui-card-description>
+          </ui-card-header>
+          <ui-card-content>
+            @if (fetchFailed()) {
+              <ui-empty-state
+                [icon]="cloudIcon"
+                role="alert"
+                title="Couldn't load API keys"
+                description="Something went wrong on our side. Please try again."
+                class="py-4"
+              >
+                <ng-template #cloudIcon><lucide-icon [img]="CloudIcon" /></ng-template>
+                <button ui-button variant="outline" size="sm" class="mt-4" (click)="load()">{{ t('settings.activity.states.retry') }}</button>
+              </ui-empty-state>
+            } @else if (pending()) {
+              <div class="text-muted-foreground flex items-center gap-2 py-4 text-sm">
+                <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" aria-hidden="true" />
+                {{ t('settings.apikeys.loading') }}
+              </div>
+            } @else if (keys().length === 0) {
+              <ui-empty-state
+                [icon]="keyIcon"
+                [title]="t('settings.apikeys.emptyTitle')"
+                [description]="t('settings.apikeys.emptyDescription')"
+                class="py-4"
+              >
+                <ng-template #keyIcon><lucide-icon [img]="KeyIcon" /></ng-template>
+              </ui-empty-state>
+            } @else {
+              <ui-table>
+                <thead ui-table-header>
+                  <tr ui-table-row>
+                    <th ui-table-head scope="col">{{ t('settings.apikeys.colName') }}</th>
+                    <th ui-table-head scope="col">{{ t('settings.apikeys.colKey') }}</th>
+                    <th ui-table-head scope="col">{{ t('settings.apikeys.colScopes') }}</th>
+                    <th ui-table-head scope="col" class="tabular-nums">{{ t('settings.apikeys.colCreated') }}</th>
+                    <th ui-table-head scope="col" class="tabular-nums">{{ t('settings.apikeys.colExpires') }}</th>
+                    <th ui-table-head scope="col" class="tabular-nums">{{ t('settings.apikeys.colLastUsed') }}</th>
+                    <th ui-table-head scope="col" class="text-right">{{ t('settings.apikeys.colActions') }}</th>
+                  </tr>
+                </thead>
+                <tbody ui-table-body>
+                  @for (k of keys(); track k.id) {
+                    <tr ui-table-row>
+                      <td ui-table-cell class="font-medium">
+                        <span class="mr-2">{{ k.name }}</span>
+                        @if (k.revokedAt) {
+                          <span ui-badge variant="secondary">{{ t('settings.apikeys.revoked') }}</span>
+                        }
+                      </td>
+                      <td ui-table-cell><code class="font-mono text-xs">{{ k.prefix }}…</code></td>
+                      <td ui-table-cell>
+                        <div class="flex gap-1">
+                          @for (s of badges(k.scopes); track s) {
+                            <span ui-badge variant="secondary">{{ s }}</span>
+                          }
+                        </div>
+                      </td>
+                      <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ fmtDate(k.createdAt) }}</td>
+                      <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ fmtDate(k.expiresAt) }}</td>
+                      <td ui-table-cell class="text-muted-foreground text-xs tabular-nums">{{ k.lastUsedAt ? fmtDate(k.lastUsedAt) : t('settings.apikeys.neverUsed') }}</td>
+                      <td ui-table-cell class="text-right">
+                        @if (!k.revokedAt) {
+                          <button
+                            ui-button
+                            variant="ghost"
+                            size="icon"
+                            [attr.aria-label]="t('settings.apikeys.revokeAria', { name: k.name })"
+                            [disabled]="revokingId() === k.id"
+                            (click)="revokeTarget.set(k)"
+                          >
+                            @if (revokingId() === k.id) {
+                              <lucide-icon [img]="LoaderIcon" class="size-4 animate-spin" />
+                            } @else {
+                              <lucide-icon [img]="TrashIcon" class="text-destructive size-4" />
+                            }
+                          </button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </ui-table>
+            }
+
+            @if (actionError()) {
+              <div class="text-destructive mt-3 flex items-center gap-2 text-sm">
+                <lucide-icon [img]="AlertIcon" class="size-4" />
+                {{ actionError() }}
+              </div>
+            }
+          </ui-card-content>
+        </ui-card>
+
+        <ui-dialog [open]="showRaw()" (openChange)="onRawOpenChange($event)">
+          <ui-dialog-content>
+            <ui-dialog-header>
+              <ui-dialog-title>{{ t('settings.apikeys.rawTitle') }}</ui-dialog-title>
+              <ui-dialog-description>{{ t('settings.apikeys.rawDescription') }}</ui-dialog-description>
+            </ui-dialog-header>
+            <div class="grid gap-4 py-1">
+              <div class="bg-muted flex items-center gap-2 rounded-md border px-3 py-2">
+                <code class="flex-1 font-mono text-xs break-all">{{ rawKey() }}</code>
+                <button ui-button variant="outline" size="sm" class="shrink-0" (click)="copyRaw()">
+                  @if (copied()) {
+                    <lucide-icon [img]="CheckIcon" class="size-4" />
+                  } @else {
+                    <lucide-icon [img]="CopyIcon" class="size-4" />
+                  }
+                  {{ copied() ? t('settings.apikeys.rawCopied') : t('settings.apikeys.rawCopy') }}
+                </button>
+              </div>
+              <div class="border-warning/30 bg-warning/10 text-warning flex items-start gap-2 rounded-md border px-3 py-2">
+                <lucide-icon [img]="WarnIcon" class="size-4 shrink-0" aria-hidden="true" />
+                <p class="text-xs">{{ t('settings.apikeys.rawWarning') }}</p>
+              </div>
+            </div>
+            <ui-dialog-footer>
+              <button ui-button (click)="closeRaw()">{{ t('settings.apikeys.rawDone') }}</button>
+            </ui-dialog-footer>
+          </ui-dialog-content>
+        </ui-dialog>
+
+        <ui-dialog [open]="revokeTarget() !== null" (openChange)="onRevokeOpenChange($event)">
+          <ui-dialog-content class="sm:max-w-md">
+            <ui-dialog-header>
+              <ui-dialog-title>{{ t('settings.apikeys.revokeTitle', { name: revokeTarget()?.name ?? '' }) }}</ui-dialog-title>
+              <ui-dialog-description>{{ t('settings.apikeys.revokeDescription') }}</ui-dialog-description>
+            </ui-dialog-header>
+            <ui-dialog-footer>
+              <button ui-button variant="outline" (click)="revokeTarget.set(null)">{{ t('settings.apikeys.revokeCancel') }}</button>
+              <button ui-button variant="destructive" (click)="revokeSelected()">
+                <lucide-icon [img]="TrashIcon" class="size-4" aria-hidden="true" />
+                {{ t('settings.apikeys.revoke') }}
+              </button>
+            </ui-dialog-footer>
+          </ui-dialog-content>
+        </ui-dialog>
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class SettingsApiKeys {
   private readonly http = inject(HttpClient)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
   private readonly i18n = inject(I18nService)
+  protected readonly pageTitle = injectPageTitle()
 
   protected readonly AlertIcon = CircleAlert
   protected readonly CheckIcon = Check
@@ -351,12 +356,8 @@ export class SettingsApiKeys {
   protected readonly revokeTarget = signal<ApiKeyRow | null>(null)
   protected readonly revokingId = signal<number | null>(null)
   protected readonly actionError = signal<string | null>(null)
-  // Demo sample rows are re-served on every fetch — track locally-dismissed
-  // ones so a revoke sticks for the session.
-  protected readonly dismissedIds = signal<readonly number[]>([])
 
   constructor() {
-    inject(Title).setTitle('API keys · Settings')
     if (this.browser) this.load()
     else this.pending.set(false)
   }
@@ -365,13 +366,15 @@ export class SettingsApiKeys {
     return scopeBadges(scopes)
   }
 
-  rowClass(k: ApiKeyRow): string {
-    return cn(k.revokedAt && 'opacity-60')
+  // Reads lang() so a locale switch re-renders the copy.
+  t(key: string, params?: Record<string, string | number>): string {
+    this.i18n.lang()
+    return this.i18n.t(key, params)
   }
 
   fmtDate(value: string | null): string {
-    if (!value) return 'Never'
-    return new Date(value).toLocaleDateString(this.i18n.locale, { year: 'numeric', month: 'short', day: 'numeric' })
+    if (!value) return this.t('settings.apikeys.never')
+    return new Date(value).toLocaleDateString(this.i18n.lang(), { year: 'numeric', month: 'short', day: 'numeric' })
   }
 
   load(): void {
@@ -381,7 +384,7 @@ export class SettingsApiKeys {
     this.http.get<ApiResponse<{ keys: ApiKeyRow[] }>>('/api/keys', { withCredentials: true }).subscribe({
       next: (res) => {
         this.pending.set(false)
-        if (res.ok) this.keys.set(res.data.keys.filter((k) => !this.dismissedIds().includes(k.id)))
+        if (res.ok) this.keys.set(res.data.keys)
         else this.fetchFailed.set(true)
       },
       error: () => {
@@ -430,11 +433,6 @@ export class SettingsApiKeys {
     const k = this.revokeTarget()
     if (!this.browser || !k || this.revokingId() !== null) return
     this.revokeTarget.set(null)
-    // Sample rows live only in the demo response — dismiss locally.
-    if (k.sample) {
-      this.dismissedIds.set([...this.dismissedIds(), k.id])
-      return
-    }
     this.revokingId.set(k.id)
     this.actionError.set(null)
     this.http.delete<ApiResponse<{ revoked: number }>>(`/api/keys/${k.id}`, { withCredentials: true }).subscribe({

@@ -6,7 +6,7 @@ import { provideHttpClient } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing'
 import { provideRouter } from '@angular/router'
 import { SettingsApiKeys, scopeBadges } from '@/app/pages/settings/settings-api-keys'
-import { I18nService } from '@/app/core/i18n'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 const KEYS = [
   { id: 1, name: 'CI deploy', prefix: 'uipk_live_abc', scopes: 'read write', lastUsedAt: null, expiresAt: null, revokedAt: null, createdAt: '2026-09-01T10:00:00Z' },
@@ -16,6 +16,22 @@ describe('scopeBadges', () => {
   it('splits scope strings', () => {
     expect(scopeBadges('read write')).toEqual(['read', 'write'])
     expect(scopeBadges('')).toEqual([])
+  })
+})
+
+describe('SettingsApiKeys (no keys)', () => {
+  it('shows the Nuxt empty state when there are no keys', async () => {
+    await TestBed.configureTestingModule({
+      imports: [SettingsApiKeys],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideTestI18n()],
+    }).compileComponents()
+    seedI18n()
+    const empty = TestBed.createComponent(SettingsApiKeys)
+    empty.detectChanges()
+    TestBed.inject(HttpTestingController).expectOne('/api/keys').flush({ ok: true, data: { keys: [] } })
+    empty.detectChanges()
+    await empty.whenStable()
+    expect(empty.nativeElement.textContent).toContain('No API keys yet')
   })
 })
 
@@ -30,9 +46,10 @@ describe('SettingsApiKeys', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: I18nService, useValue: { locale: 'en' } },
+        provideTestI18n(),
       ],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(SettingsApiKeys)
     fixture.detectChanges()
     TestBed.inject(HttpTestingController).expectOne('/api/keys').flush({ ok: true, data: { keys: KEYS } })
@@ -50,9 +67,10 @@ describe('SettingsApiKeys', () => {
     const heads = Array.from(fixture.nativeElement.querySelectorAll('thead th')) as HTMLTableCellElement[]
     expect(heads.length).toBeGreaterThan(0)
     for (const th of heads) expect(th.getAttribute('scope')).toBe('col')
-    const headings = Array.from(fixture.nativeElement.querySelectorAll('h2')).map((h) => (h as HTMLElement).textContent?.trim())
-    expect(headings).toContain('Create a key')
-    expect(headings).toContain('Your keys')
+    // Card titles are h3 under the page h1, as in Nuxt.
+    const headings = Array.from(fixture.nativeElement.querySelectorAll('h3')).map((h) => (h as HTMLElement).textContent?.trim())
+    expect(headings).toContain('Create key')
+    expect(headings).toContain('Active keys')
   })
 
   it('returns focus to the revoke trigger after Esc closes the dialog', async () => {
