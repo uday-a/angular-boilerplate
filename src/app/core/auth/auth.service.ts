@@ -8,15 +8,20 @@
 //   - demo() — POST /auth/demo + fetch (demo mode only)
 //   - logout() — POST /auth/logout, clear user$, navigate /login
 //
-// SSR safety: every method no-ops (or returns a cold observable) on the
-// server — relative-URL HttpClient calls have no base href during SSR.
-// Guards defer to the client for the same reason (see auth.guard.ts).
-import { Injectable, PLATFORM_ID, inject } from '@angular/core'
+// Session at app start (init(), run by an app initializer): on the server the
+// user comes from the sealed cookie via the SSR context and is handed to the
+// client through TransferState, so the header/pricing render signed-in on a
+// hard load with no pop-in. Without that state (CSR fallback) the browser
+// fetches /api/me once. Other HTTP methods no-op on the server.
+import { Injectable, PLATFORM_ID, TransferState, inject, makeStateKey } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
 import { Router } from '@angular/router'
 import { BehaviorSubject, catchError, map, of, switchMap, tap, type Observable } from 'rxjs'
 import { safeRedirectPath } from '../utils/cn'
+import { injectSsrContext } from '../config/ssr-context'
+
+const USER_KEY = makeStateKey<AuthUser | null>('auth-user')
 
 // Session user shape — mirrors server/auth/session.ts SessionUser.
 // Role stays `string` (not the DB union) so the client never imports
@@ -50,6 +55,8 @@ export class AuthService {
   private readonly http = inject(HttpClient)
   private readonly router = inject(Router)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
+  private readonly transferState = inject(TransferState)
+  private readonly ssrContext = injectSsrContext()
 
   private readonly userSubject = new BehaviorSubject<AuthUser | null>(null)
   readonly user$: Observable<AuthUser | null> = this.userSubject.asObservable()
@@ -61,6 +68,18 @@ export class AuthService {
 
   get loggedIn(): boolean {
     return this.user !== null
+  }
+
+  // Resolve the session once at app start (see header comment).
+  init(): void {
+    if (!this.browser) {
+      const user = this.ssrContext?.user ?? null
+      this.userSubject.next(user)
+      this.transferState.set(USER_KEY, user)
+      return
+    }
+    if (this.transferState.hasKey(USER_KEY)) this.userSubject.next(this.transferState.get(USER_KEY, null))
+    else this.fetch().subscribe()
   }
 
   // Refresh session state from GET /api/me. Resolves null when anonymous

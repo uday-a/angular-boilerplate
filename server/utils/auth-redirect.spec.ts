@@ -100,3 +100,24 @@ describe('authRedirect', () => {
     expect(res.statusCode).toBe(0)
   })
 })
+
+describe('authRedirect on guest pages', () => {
+  it('sends signed-in users from the sign-in pages to /dashboard', async () => {
+    for (const p of ['/login', '/sign-up', '/forgot-password', '/mfa']) {
+      const res = mockRes()
+      const next = vi.fn() as unknown as NextFunction
+      await authRedirect(await authedReq(p), res, next)
+      expect(res.statusCode).toBe(302)
+      expect(res.location).toBe('/dashboard')
+      expect(next).not.toHaveBeenCalled()
+    }
+  })
+
+  it('lets anonymous visitors see the sign-in pages', async () => {
+    const res = mockRes()
+    const next = vi.fn() as unknown as NextFunction
+    await authRedirect(anonReq('/login', '/login?next=%2Fsettings'), res, next)
+    expect(next).toHaveBeenCalled()
+    expect(res.statusCode).toBe(0)
+  })
+})

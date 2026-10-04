@@ -12,9 +12,10 @@ import { env, isDevelopment } from '../utils/env'
 import type { Role } from '../db/schema'
 
 export const SESSION_COOKIE_NAME = 'ng-session'
-// 14 days — matches iron-session's default TTL. The cookie max-age is
-// derived from this (ttl - 60s skew) by iron-session itself.
-export const SESSION_TTL_SECONDS = 1209600
+// 7 days, same in all four boilerplates. The seal expires with it and the
+// cookie's Max-Age is set to it explicitly (iron-session would otherwise
+// derive ttl - 60s).
+export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
 
 export interface SessionUser {
   id: number
@@ -53,6 +54,7 @@ export function sessionOptions(): SessionOptions {
       sameSite: 'lax',
       httpOnly: true,
       path: '/',
+      maxAge: SESSION_TTL_SECONDS,
     },
   }
 }

@@ -19,11 +19,22 @@ const PROTECTED_RE = new RegExp(`^/(${PROTECTED_PREFIXES.join('|')})(/|$)`)
 
 const ADMIN_RE = /^\/admin(\/|$)/
 
+// Sign-in pages a signed-in user skips (Nuxt: login/sign-up/forgot-password/mfa
+// each `navigateTo('/dashboard')` when loggedIn) — server-side so SSR never
+// paints the form first. Mirrored client-side by guestGuard.
+const GUEST_RE = /^\/(login|sign-up|forgot-password|mfa)\/?$/
+
 export function isProtectedPage(path: string): boolean {
   return PROTECTED_RE.test(path)
 }
 
 export async function authRedirect(req: Request, res: Response, next: NextFunction): Promise<void> {
+  if (GUEST_RE.test(req.path)) {
+    const session = await getSessionFromRequest(req)
+    if (session.user) res.redirect(302, '/dashboard')
+    else next()
+    return
+  }
   if (!isProtectedPage(req.path)) {
     next()
     return

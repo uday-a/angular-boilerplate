@@ -2,7 +2,7 @@
 //
 // Request flow (order matters):
 //   1. /api/*  → apiRouter   (server/api/index.ts)
-//   2. /auth/* → authRouter  (server/auth/index.ts)
+//   2. /auth/* → authRouter  (server/auth/index.ts), /robots.txt + /sitemap.xml → seoRouter
 //   3. static files from the browser bundle
 //   4. everything else → Angular SSR
 //
@@ -20,8 +20,10 @@ import express from 'express'
 import { dirname, join } from 'node:path'
 import { apiRouter } from '../server/api/index'
 import { authRouter } from '../server/auth/index'
+import { seoRouter } from '../server/seo/index'
 import { assertValidEnv } from '../server/utils/env'
 import { authRedirect } from '../server/utils/auth-redirect'
+import { ssrContext } from '../server/utils/ssr-context'
 import { initServerSentry } from '../server/utils/sentry'
 
 // NOTE: no top-level side effects below the imports (no env validation, no
@@ -38,6 +40,8 @@ const serverDistFolder = dirname((process.argv[1] ?? '').replace(/\\/g, '/'))
 const browserDistFolder = join(serverDistFolder, '../browser')
 
 const app = express()
+// No `X-Powered-By: Express` fingerprint.
+app.disable('x-powered-by')
 const angularApp = new AngularNodeAppEngine()
 
 // Baseline security headers for every response (API + SSR pages). CSP is
@@ -71,6 +75,8 @@ app.use((req, res, next) => {
 
 app.use('/api', apiRouter)
 app.use('/auth', authRouter)
+// /robots.txt + /sitemap.xml (server/seo).
+app.use(seoRouter)
 
 // Anonymous visitors to authenticated pages (dashboard, settings, projects,
 // feedback, support, onboarding) 302 to /login?next=<url> — the server-side
@@ -92,8 +98,8 @@ app.use(
  * Handle all other requests by rendering the Angular application.
  */
 app.use((req, res, next) => {
-  angularApp
-    .handle(req)
+  ssrContext(req)
+    .then((context) => angularApp.handle(req, context))
     .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next)
 })

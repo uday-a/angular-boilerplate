@@ -4,12 +4,11 @@
 // as PUBLIC_CONFIG. PUBLIC values only — PostHog keys and Sentry DSNs are
 // public by design; secrets never leave the server.
 //
-// SSR safety: the server bundle never runs main.ts, so SSR renders with
-// DEFAULT_PUBLIC_CONFIG (empty keys → PostHog/Sentry no-op on the server).
-// PostHog/Sentry don't affect rendered output, so there is no hydration
-// mismatch; demoMode consumers must tolerate the default until the client
-// boots with real values.
+// SSR: the server bundle never runs main.ts; it reads the same values from
+// the per-request SSR context (server/utils/ssr-context.ts), so server HTML
+// (e.g. the demo bar) matches what the client boots with.
 import { InjectionToken } from '@angular/core'
+import { injectSsrContext } from './ssr-context'
 
 export interface PublicConfig {
   posthogKey: string
@@ -29,7 +28,7 @@ export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
 
 export const PUBLIC_CONFIG = new InjectionToken<PublicConfig>('PUBLIC_CONFIG', {
   providedIn: 'root',
-  factory: () => ({ ...DEFAULT_PUBLIC_CONFIG }),
+  factory: () => ({ ...DEFAULT_PUBLIC_CONFIG, ...injectSsrContext()?.publicConfig }),
 })
 
 // Fetched once by main.ts before bootstrap. Any failure (API down, bad

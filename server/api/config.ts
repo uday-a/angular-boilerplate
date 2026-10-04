@@ -13,7 +13,9 @@
 import { env, isDemoMode } from '../utils/env'
 import { apiHandler } from '../utils/response'
 
-export const configHandler = apiHandler(async () => {
+// Also handed to SSR (server/utils/ssr-context.ts) so server-rendered HTML
+// matches what the client boots with (demo bar, etc.).
+export function publicConfig() {
   return {
     posthogKey: env.POSTHOG_KEY ?? '',
     posthogHost: env.POSTHOG_HOST,
@@ -21,4 +23,6 @@ export const configHandler = apiHandler(async () => {
     siteUrl: env.SITE_URL,
     demoMode: isDemoMode,
   }
-})
+}
+
+export const configHandler = apiHandler(async () => publicConfig())

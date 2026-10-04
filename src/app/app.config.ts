@@ -1,25 +1,20 @@
 import {
   ApplicationConfig,
   ErrorHandler,
-  Injectable,
   provideBrowserGlobalErrorListeners,
+  inject,
+  provideAppInitializer,
   provideZoneChangeDetection,
 } from '@angular/core'
 import { provideRouter } from '@angular/router'
 import { provideHttpClient, withFetch } from '@angular/common/http'
-import { provideClientHydration, Title, withEventReplay } from '@angular/platform-browser'
+import { provideClientHydration, withEventReplay } from '@angular/platform-browser'
 import * as Sentry from '@sentry/angular'
 import { routes } from './app.routes'
 import { provideI18n } from './core/i18n'
 import { providePosthog } from './core/analytics'
-
-// Matches Nuxt's site-name title template: every setTitle("<Page>") renders "<Page> | UIPKGE".
-@Injectable()
-class SiteTitle extends Title {
-  override setTitle(title: string) {
-    super.setTitle(!title || title === 'UIPKGE' || title.endsWith(' | UIPKGE') ? title || 'UIPKGE' : `${title} | UIPKGE`)
-  }
-}
+import { AuthService } from './core/auth/auth.service'
+import { provideSeo } from './core/seo/seo'
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -34,6 +29,9 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useValue: Sentry.createErrorHandler() },
     provideI18n(),
     providePosthog(),
-    { provide: Title, useClass: SiteTitle },
+    provideSeo(),
+    // Session once at app start, so public pages (header, pricing) know a
+    // signed-in user on hard load — SSR included.
+    provideAppInitializer(() => inject(AuthService).init()),
   ],
 }
