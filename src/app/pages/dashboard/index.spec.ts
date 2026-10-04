@@ -59,6 +59,7 @@ import { provideZonelessChangeDetection } from '@angular/core'
 import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { provideRouter } from '@angular/router'
 import { DashboardIndexComponent } from '@/app/pages/dashboard/index'
+import { provideTestI18n, seedI18n } from '../../../../test-utils/i18n'
 
 describe('DashboardIndexComponent', () => {
   let fixture: ComponentFixture<DashboardIndexComponent>
@@ -67,8 +68,9 @@ describe('DashboardIndexComponent', () => {
     localStorage.clear()
     await TestBed.configureTestingModule({
       imports: [DashboardIndexComponent],
-      providers: [provideZonelessChangeDetection(), provideRouter([])],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(DashboardIndexComponent)
     fixture.detectChanges()
     await fixture.whenStable()
@@ -105,6 +107,13 @@ describe('DashboardIndexComponent', () => {
       'Open the full data table',
     ]) {
       expect(text).toContain(copy)
+    }
+  })
+
+  it('renders card titles as h3 headings so the page outline matches Nuxt', () => {
+    const headings = [...(fixture.nativeElement as HTMLElement).querySelectorAll('h3')].map((h) => h.textContent?.trim())
+    for (const title of ['Revenue vs expenses', 'Conversion funnel', 'Quota', 'Active alerts', 'Customers by region', 'Top customers']) {
+      expect(headings).toContain(title)
     }
   })
 

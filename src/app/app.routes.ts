@@ -1,5 +1,6 @@
-import { Routes } from '@angular/router'
-import { authGuard } from './core/auth/auth.guard'
+import { Injector, inject } from '@angular/core'
+import { Routes, type UrlSegment } from '@angular/router'
+import { authGuard, guestGuard } from './core/auth/auth.guard'
 import { roleGuard } from './core/auth/role.guard'
 
 // Every page loads lazily (loadComponent) so the initial bundle stays small —
@@ -8,13 +9,14 @@ import { roleGuard } from './core/auth/role.guard'
 // download the sidebar shell.
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./pages/home/home').then(m => m.Home) },
-  { path: 'login', loadComponent: () => import('./pages/login/login').then(m => m.Login) },
-  { path: 'sign-up', loadComponent: () => import('./pages/sign-up/sign-up').then(m => m.SignUp) },
+  { path: 'login', loadComponent: () => import('./pages/login/login').then(m => m.Login), canActivate: [guestGuard] },
+  { path: 'sign-up', loadComponent: () => import('./pages/sign-up/sign-up').then(m => m.SignUp), canActivate: [guestGuard] },
   {
     path: 'forgot-password',
     loadComponent: () => import('./pages/forgot-password/forgot-password').then(m => m.ForgotPassword),
+    canActivate: [guestGuard],
   },
-  { path: 'mfa', loadComponent: () => import('./pages/mfa/mfa').then(m => m.Mfa) },
+  { path: 'mfa', loadComponent: () => import('./pages/mfa/mfa').then(m => m.Mfa), canActivate: [guestGuard] },
   { path: 'pricing', loadComponent: () => import('./pages/pricing/pricing').then(m => m.Pricing) },
   { path: 'terms', loadComponent: () => import('./pages/terms/terms').then(m => m.Terms) },
   { path: 'privacy', loadComponent: () => import('./pages/privacy/privacy').then(m => m.Privacy) },
@@ -44,9 +46,16 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/dashboard/kanban').then(m => m.DashboardKanbanComponent),
       },
       {
-        // Deep link into a task (opens the task sheet for :id; unknown ids
-        // render the plain board — never a redirect to /).
+        // Deep link into a task (opens the task sheet for :id). Unknown ids
+        // fail canMatch and fall through to the '**' 404 page.
         path: 'dashboard/kanban/:id',
+        // Lazy import keeps the kanban seed out of the initial bundle.
+        canMatch: [async (_route: unknown, segments: UrlSegment[]) => {
+          const injector = inject(Injector)
+          const { KanbanStore } = await import('./core/dashboard/kanban-data')
+          const { findTaskById } = await import('./core/dashboard/kanban')
+          return !!findTaskById(injector.get(KanbanStore).columns(), segments.at(-1)?.path ?? '')
+        }],
         loadComponent: () => import('./pages/dashboard/kanban').then(m => m.DashboardKanbanComponent),
       },
       {

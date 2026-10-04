@@ -1,19 +1,28 @@
-// Daily session heatmap. Ports nuxt-boilerplate's
-// app/pages/dashboard/activity.vue 1:1 (createMonthGrid + deterministic mock).
-import { ChangeDetectionStrategy, Component, computed } from '@angular/core'
-import { Title } from '@angular/platform-browser'
+// Daily session heatmap + live audit feed. Ports nuxt-boilerplate's
+// app/pages/dashboard/activity.vue (createMonthGrid + deterministic mock;
+// /api/activity rows render in "Recent events", sample-data banner otherwise).
+import { ChangeDetectionStrategy, Component, PLATFORM_ID, computed, inject, signal } from '@angular/core'
+import { isPlatformBrowser } from '@angular/common'
+import { HttpClient } from '@angular/common/http'
+import { TranslatePipe } from '@ngx-translate/core'
 import {
   Activity as ActivityIcon,
+  AlertCircle,
   Calendar as CalendarIcon,
   ChartColumn,
   ChevronLeft,
   ChevronRight,
   Flame,
+  FolderPlus,
+  LogIn,
   LucideAngularModule,
+  MessageSquare,
   MousePointer2,
   Sparkles,
   TrendingUp,
+  UserPlus,
   X,
+  type LucideIconData,
 } from 'lucide-angular'
 import {
   createMonthGrid,
@@ -21,13 +30,36 @@ import {
   isoDate,
   type DateKey,
 } from '@/app/core/dashboard/month-grid'
+import { type ApiResponse } from '@/app/core/api/api'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
+import { UiCardComponent, UiCardHeaderComponent, UiCardTitleComponent } from '@/app/components/ui/card/card.component'
+import { UiEmptyStateComponent } from '@/app/components/ui/empty-state/empty-state.component'
+import {
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page'
+import { UiDemoDataBannerComponent } from '@/app/components/blocks/demo-data-banner'
 import { UiStatTileComponent } from '@/app/components/blocks/stat-tile/stat-tile.component'
+import type { ActivityItem } from '@/app/pages/settings/settings-activity'
 
 function djb2(s: string): number {
   let h = 5381
   for (let i = 0; i < s.length; i++) h = ((h << 5) + h) + s.charCodeAt(i)
   return Math.abs(h)
+}
+
+// 5-level intensity -> one chart-2 opacity ramp (legend reuses it).
+const INTENSITY_RAMP = ['bg-muted/40', 'bg-chart-2/15', 'bg-chart-2/35', 'bg-chart-2/60', 'bg-chart-2/90'] as const
+
+function feedActionIcon(action: string): LucideIconData {
+  if (action.startsWith('auth.')) return LogIn
+  if (action.startsWith('projects.')) return FolderPlus
+  if (action.startsWith('feedback.')) return MessageSquare
+  if (action.startsWith('team.')) return UserPlus
+  return ActivityIcon
 }
 
 @Component({
@@ -36,7 +68,17 @@ function djb2(s: string): number {
   standalone: true,
   imports: [
     LucideAngularModule,
+    TranslatePipe,
     UiButtonComponent,
+    UiCardComponent,
+    UiCardHeaderComponent,
+    UiCardTitleComponent,
+    UiDemoDataBannerComponent,
+    UiEmptyStateComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiStatTileComponent,
   ],
   host: {
@@ -44,167 +86,213 @@ function djb2(s: string): number {
     '(window:mouseleave)': 'grid.endDrag()',
   },
   template: `
-    <div class="flex flex-col gap-4" (mouseup)="grid.endDrag()">
-      <header class="flex flex-wrap items-end justify-between gap-4">
-        <div class="space-y-1">
-          <h1 class="text-2xl font-semibold tracking-tight">Activity</h1>
-          <p class="text-muted-foreground text-sm">Daily session heatmap. Drag or shift-click to summarize a range.</p>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading
+          [title]="pageTitle()"
+          description="Daily session heatmap. Drag or shift-click to summarize a range."
+        />
+      </ui-page-header>
+
+      <ui-page-body class="space-y-4">
+        @if (!hasLive()) {
+          <ui-demo-data-banner />
+        }
+
+        <!-- KPI strip -->
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <ui-stat-tile
+            label="Total this month"
+            [value]="monthStats().total.toLocaleString()"
+            caption="sessions"
+            [icon]="ActivityIcon"
+          />
+          <ui-stat-tile
+            label="Avg per active day"
+            [value]="'' + monthStats().avg"
+            caption="sessions/day"
+            [icon]="ChartColumn"
+          />
+          <ui-stat-tile
+            label="Peak day"
+            [value]="'' + (monthStats().peak?.count ?? 0)"
+            [caption]="monthStats().peak ? fmtKey(monthStats().peak!.key) : '—'"
+            [icon]="TrendingUp"
+          />
+          <ui-stat-tile
+            label="Current streak"
+            [value]="'' + monthStats().streak"
+            [caption]="'day' + (monthStats().streak === 1 ? '' : 's') + ' in a row'"
+            [icon]="Flame"
+          />
         </div>
-      </header>
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <ui-stat-tile
-          label="Total this month"
-          [value]="monthStats().total.toLocaleString()"
-          caption="sessions"
-          [icon]="ActivityIcon"
-        />
-        <ui-stat-tile
-          label="Avg per active day"
-          [value]="'' + monthStats().avg"
-          caption="sessions/day"
-          [icon]="ChartColumn"
-        />
-        <ui-stat-tile
-          label="Peak day"
-          [value]="'' + (monthStats().peak?.count ?? 0)"
-          [caption]="monthStats().peak ? fmtKey(monthStats().peak!.key) : '—'"
-          [icon]="TrendingUp"
-        />
-        <ui-stat-tile
-          label="Current streak"
-          [value]="'' + monthStats().streak"
-          [caption]="'day' + (monthStats().streak === 1 ? '' : 's') + ' in a row'"
-          [icon]="Flame"
-        />
-      </div>
-
-      <div class="rounded-xl border bg-card overflow-hidden">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/30 px-4 py-2.5">
-          <div class="flex items-center gap-2">
-            <button ui-button variant="outline" size="icon" class="size-8" aria-label="Previous month" (click)="grid.prevMonth()">
-              <lucide-icon [img]="ChevronLeft" class="size-4" />
-            </button>
-            <button ui-button variant="outline" size="icon" class="size-8" aria-label="Next month" (click)="grid.nextMonth()">
-              <lucide-icon [img]="ChevronRight" class="size-4" />
-            </button>
-            <button ui-button variant="ghost" size="sm" class="h-7 text-xs" (click)="grid.goToToday()">Today</button>
-            <h2 class="text-sm font-semibold ml-2">{{ grid.monthLabel() }}</h2>
-          </div>
-          <div class="flex items-center gap-3 text-xs text-muted-foreground">
-            @if (grid.isRange()) {
-              <div
-                class="flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-foreground ring-1 ring-inset ring-primary/20"
-              >
-                <lucide-icon [img]="MousePointer2" class="size-3" />
-                <span>
-                  {{ grid.rangeDayCount() }} days · {{ rangeStats().total.toLocaleString() }} sessions · avg
-                  {{ rangeStats().avg }}
-                </span>
-                <button class="ml-0.5 hover:text-foreground" (click)="grid.clearRange()">
-                  <lucide-icon [img]="X" class="size-3" />
-                </button>
-              </div>
-            }
-            <div class="flex items-center gap-1.5">
-              <lucide-icon [img]="Sparkles" class="size-3" />
-              <span>{{ monthStats().total.toLocaleString() }} this month</span>
+        <!-- Heatmap card -->
+        <div ui-card>
+          <!-- Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-4 border-b px-4 py-2">
+            <div class="flex items-center gap-2">
+              <button ui-button variant="outline" size="icon" class="size-8" aria-label="Previous month" (click)="grid.prevMonth()">
+                <lucide-icon [img]="ChevronLeft" class="size-4" />
+              </button>
+              <button ui-button variant="outline" size="icon" class="size-8" aria-label="Next month" (click)="grid.nextMonth()">
+                <lucide-icon [img]="ChevronRight" class="size-4" />
+              </button>
+              <button ui-button variant="ghost" size="sm" class="h-7 text-xs" (click)="grid.goToToday()">Today</button>
+              <h2 class="ml-2 text-sm font-semibold">{{ grid.monthLabel() }}</h2>
             </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-7 border-b bg-muted/10 text-xs uppercase tracking-wider text-muted-foreground">
-          @for (w of grid.weekdays(); track w) {
-            <div class="px-2 py-2 font-medium">{{ w }}</div>
-          }
-        </div>
-
-        <div class="grid grid-cols-7 select-none">
-          @for (d of monthCells(); track d.key; let i = $index) {
-            <button
-              type="button"
-              [class]="cellClass(d.key, d.inMonth, i)"
-              [title]="fmtKey(d.key) + ' — ' + d.count + ' session' + (d.count === 1 ? '' : 's')"
-              (mousedown)="grid.onCellMouseDown(d.key, $event)"
-              (mouseenter)="grid.onCellMouseEnter(d.key)"
-            >
-              <div
-                [class]="
-                  'pointer-events-none absolute inset-1 rounded-md transition-all group-hover:brightness-125 group-hover:inset-0.5 ' +
-                  intensityClass(d.count)
-                "
-              ></div>
-              <span [class]="dateClass(d.key, d.inMonth)">{{ d.date.getDate() }}</span>
-              @if (d.count > 0 && d.inMonth) {
-                <!-- WHY (Rule95): focus-within joins hover so keyboard/touch
-                     users get the count too -- hover alone hides it from them. -->
-                <span
-                  class="relative z-10 text-xs tabular-nums text-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+            <div class="text-muted-foreground flex items-center gap-4 text-xs">
+              @if (grid.isRange()) {
+                <div
+                  class="bg-primary/10 text-primary ring-primary/20 flex items-center gap-1.5 rounded-full px-2 py-0.5 ring-1 ring-inset"
                 >
-                  {{ d.count }}
-                </span>
+                  <lucide-icon [img]="MousePointer2" class="size-3.5" aria-hidden="true" />
+                  <span class="tabular-nums"
+                    >{{ grid.rangeDayCount() }} days · {{ rangeStats().total.toLocaleString() }} sessions · avg
+                    {{ rangeStats().avg }}</span
+                  >
+                  <button type="button" class="hover:text-foreground ml-0.5" aria-label="Clear range" (click)="grid.clearRange()">
+                    <lucide-icon [img]="X" class="size-3.5" />
+                  </button>
+                </div>
               }
-            </button>
-          }
-        </div>
-
-        <div class="flex flex-wrap items-center gap-3 border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-          <lucide-icon [img]="CalendarIcon" class="size-3" />
-          <span>Less</span>
-          <span class="h-2.5 w-4 rounded-sm bg-muted/40"></span>
-          <span class="h-2.5 w-4 rounded-sm bg-chart-1/15"></span>
-          <span class="h-2.5 w-4 rounded-sm bg-chart-1/35"></span>
-          <span class="h-2.5 w-4 rounded-sm bg-chart-1/60"></span>
-          <span class="h-2.5 w-4 rounded-sm bg-chart-1/85"></span>
-          <span>More</span>
-          <span class="ml-auto">Tip: drag or shift-click to summarize a range.</span>
-        </div>
-      </div>
-
-      @if (grid.isRange()) {
-        <div class="rounded-xl border bg-card p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Selected range</p>
-              <p class="mt-1 text-base font-semibold">
-                {{ fmtKey(grid.rangeBounds().lo) }} → {{ fmtKey(grid.rangeBounds().hi) }}
-              </p>
+              <div class="flex items-center gap-1.5">
+                <lucide-icon [img]="Sparkles" class="size-3.5" aria-hidden="true" />
+                <span class="tabular-nums">{{ monthStats().total.toLocaleString() }} this month</span>
+              </div>
             </div>
-            <div class="grid grid-cols-3 gap-3 text-right">
+          </div>
+
+          <!-- Weekday header -->
+          <div class="bg-muted/10 text-muted-foreground grid grid-cols-7 border-b text-xs font-medium tracking-wider uppercase">
+            @for (w of grid.weekdays(); track w) {
+              <div class="p-2">{{ w }}</div>
+            }
+          </div>
+
+          <!-- Heatmap grid -->
+          <div class="grid grid-cols-7 select-none">
+            @for (d of monthCells(); track d.key; let i = $index) {
+              <button
+                type="button"
+                [class]="cellClass(d.key, d.inMonth, i)"
+                [title]="fmtKey(d.key) + ': ' + d.count + ' session' + (d.count === 1 ? '' : 's')"
+                (mousedown)="grid.onCellMouseDown(d.key, $event)"
+                (mouseenter)="grid.onCellMouseEnter(d.key)"
+              >
+                <!-- Intensity fill -->
+                <div
+                  [class]="'pointer-events-none absolute inset-1 rounded-md transition-all group-hover:inset-0.5 ' + intensityClass(d.count)"
+                ></div>
+                <!-- Date number -->
+                <span [class]="dateClass(d.key)">{{ d.date.getDate() }}</span>
+                <!-- Count badge, revealed on hover for active cells -->
+                @if (d.count > 0 && d.inMonth) {
+                  <!-- WHY (Rule95): focus-within joins hover so keyboard/touch
+                       users get the count too -- hover alone hides it from them. -->
+                  <span
+                    class="text-foreground relative z-10 text-xs tabular-nums opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                    >{{ d.count }}</span
+                  >
+                }
+              </button>
+            }
+          </div>
+
+          <!-- Legend -->
+          <div class="bg-muted/20 text-muted-foreground flex flex-wrap items-center gap-2 border-t px-4 py-2 text-xs">
+            <lucide-icon [img]="CalendarIcon" class="size-3.5" aria-hidden="true" />
+            <span>Less</span>
+            @for (cls of intensityRamp; track cls) {
+              <span [class]="'h-2.5 w-4 rounded-sm ' + cls"></span>
+            }
+            <span>More</span>
+            <span class="ml-auto">Drag or shift-click to summarize a range.</span>
+          </div>
+        </div>
+
+        <!-- Range detail (only when range > 1) -->
+        @if (grid.isRange()) {
+          <div ui-card class="p-4">
+            <div class="flex items-center justify-between gap-4">
               <div>
-                <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Days</p>
-                <!-- WHY (Rule27): KPI values sit on text-2xl so the range
-                     summary matches the tile hierarchy. -->
-                <p class="text-2xl font-semibold tracking-tight tabular-nums">{{ grid.rangeDayCount() }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Active</p>
-                <p class="text-2xl font-semibold tracking-tight tabular-nums">{{ rangeStats().active }}</p>
-              </div>
-              <div>
-                <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground">Total</p>
-                <p class="text-2xl font-semibold tracking-tight tabular-nums">
-                  {{ rangeStats().total.toLocaleString() }}
+                <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Selected range</p>
+                <p class="mt-1 text-base font-semibold">
+                  {{ fmtKey(grid.rangeBounds().lo) }} → {{ fmtKey(grid.rangeBounds().hi) }}
                 </p>
               </div>
+              <div class="grid grid-cols-3 gap-4 text-right">
+                <div>
+                  <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Days</p>
+                  <!-- WHY (Rule27): KPI values sit on text-2xl so the range
+                       summary matches the tile hierarchy. -->
+                  <p class="text-2xl font-semibold tracking-tight tabular-nums">{{ grid.rangeDayCount() }}</p>
+                </div>
+                <div>
+                  <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Active</p>
+                  <p class="text-2xl font-semibold tracking-tight tabular-nums">{{ rangeStats().active }}</p>
+                </div>
+                <div>
+                  <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Total</p>
+                  <p class="text-2xl font-semibold tracking-tight tabular-nums">
+                    {{ rangeStats().total.toLocaleString() }}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <!-- Mini per-day bars across range -->
+            <div class="mt-4 flex h-12 items-end gap-0.5">
+              @for (c of rangeStats().cells; track c.key) {
+                <div
+                  [class]="'flex-1 rounded-sm transition-colors ' + (c.count === 0 ? 'bg-muted/40' : 'bg-chart-2')"
+                  [style.height]="c.count === 0 ? '8%' : Math.min(100, 12 + c.count * 4) + '%'"
+                  [title]="fmtKey(c.key) + ': ' + c.count + ' sessions'"
+                ></div>
+              }
             </div>
           </div>
-          <div class="mt-4 flex items-end gap-0.5 h-12">
-            @for (c of rangeStats().cells; track c.key) {
-              <div
-                [class]="'flex-1 rounded-sm transition-colors ' + (c.count === 0 ? 'bg-muted/30' : 'bg-chart-1/70')"
-                [style.height]="c.count === 0 ? '8%' : Math.min(100, 12 + c.count * 4) + '%'"
-                [title]="fmtKey(c.key) + ' — ' + c.count + ' sessions'"
-              ></div>
-            }
+        }
+
+        <!-- Live events (audit log) -->
+        <div ui-card>
+          <div ui-card-header class="border-b">
+            <h2 ui-card-title class="text-base">{{ 'settings.activity.feed.title' | translate }}</h2>
           </div>
+          @if (feedPending()) {
+            <div class="text-muted-foreground px-4 py-3 text-sm">{{ 'settings.activity.states.loading' | translate }}</div>
+          } @else if (feedError()) {
+            <ui-empty-state [icon]="feedErrorIcon" role="alert" [title]="'settings.activity.states.error' | translate" class="py-4">
+              <ng-template #feedErrorIcon><lucide-icon [img]="AlertCircle" /></ng-template>
+              <button ui-button variant="outline" size="sm" class="mt-4" (click)="loadFeed()">
+                {{ 'settings.activity.states.retry' | translate }}
+              </button>
+            </ui-empty-state>
+          } @else if (hasLive()) {
+            <ul class="divide-y">
+              @for (item of feedItems(); track item.id) {
+                <li class="flex items-center gap-2 px-4 py-2">
+                  <lucide-icon [img]="feedIcon(item.action)" class="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-medium" [title]="describeItem(item)">{{ describeItem(item) }}</p>
+                    <p class="text-muted-foreground truncate text-xs" [title]="actorLabel(item)">{{ actorLabel(item) }}</p>
+                  </div>
+                  <time [title]="formatFull(item.createdAt)" class="text-muted-foreground shrink-0 text-xs tabular-nums">
+                    {{ timeAgo(item.createdAt) }}
+                  </time>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="text-muted-foreground px-4 py-3 text-sm">{{ 'settings.activity.states.empty' | translate }}</p>
+          }
         </div>
-      }
-    </div>
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class DashboardActivityComponent {
   protected readonly ActivityIcon = ActivityIcon
+  protected readonly AlertCircle = AlertCircle
   protected readonly CalendarIcon = CalendarIcon
   protected readonly ChartColumn = ChartColumn
   protected readonly ChevronLeft = ChevronLeft
@@ -216,7 +304,19 @@ export class DashboardActivityComponent {
   protected readonly X = X
   protected readonly Math = Math
 
+  private readonly http = inject(HttpClient)
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
+  private readonly i18n = inject(I18nService)
+  readonly pageTitle = injectPageTitle()
+  readonly intensityRamp = INTENSITY_RAMP
   readonly grid = createMonthGrid()
+
+  // Live audit feed (envelope checked via res.ok). Empty (no DB / demo
+  // session) keeps the mock heatmap as the fallback and shows the banner.
+  readonly feedItems = signal<ActivityItem[]>([])
+  readonly feedPending = signal(this.browser)
+  readonly feedError = signal(false)
+  readonly hasLive = computed(() => this.feedItems().length > 0)
 
   readonly monthCells = computed(() =>
     this.grid.gridDays().map((d) => ({ ...d, count: this.activityFor(d.key) })),
@@ -259,8 +359,58 @@ export class DashboardActivityComponent {
     return { total, avg, active, cells }
   })
 
-  constructor(title: Title) {
-    title.setTitle('Activity')
+  constructor() {
+    this.loadFeed()
+  }
+
+  loadFeed(): void {
+    if (!this.browser) return
+    this.feedPending.set(true)
+    this.feedError.set(false)
+    this.http.get<ApiResponse<{ items: ActivityItem[], total: number }>>('/api/activity', { withCredentials: true }).subscribe({
+      next: (res) => {
+        this.feedPending.set(false)
+        if (res.ok) this.feedItems.set(res.data.items)
+        else this.feedError.set(true)
+      },
+      error: () => {
+        this.feedPending.set(false)
+        this.feedError.set(true)
+      },
+    })
+  }
+
+  feedIcon(action: string): LucideIconData {
+    return feedActionIcon(action)
+  }
+
+  describeItem(item: ActivityItem): string {
+    const suffix = item.entity ? ` · ${item.entity}${item.entityId ? ` #${item.entityId}` : ''}` : ''
+    return `${item.action}${suffix}`
+  }
+
+  actorLabel(item: ActivityItem): string {
+    this.i18n.lang()
+    return item.actorEmail ?? this.i18n.t('settings.activity.feed.deletedUser')
+  }
+
+  formatFull(value: string): string {
+    return new Date(value).toLocaleString(this.i18n.lang(), { dateStyle: 'medium', timeStyle: 'short' })
+  }
+
+  timeAgo(value: string): string {
+    const diffMs = new Date(value).getTime() - Date.now()
+    const rtf = new Intl.RelativeTimeFormat(this.i18n.lang(), { numeric: 'auto' })
+    if (Math.abs(diffMs) / 1000 < 60) return rtf.format(Math.round(diffMs / 1000), 'second')
+    const mins = Math.round(diffMs / 60000)
+    if (Math.abs(mins) < 60) return rtf.format(mins, 'minute')
+    const hours = Math.round(diffMs / 3600000)
+    if (Math.abs(hours) < 24) return rtf.format(hours, 'hour')
+    const days = Math.round(diffMs / 86400000)
+    if (Math.abs(days) < 30) return rtf.format(days, 'day')
+    const months = Math.round(diffMs / 2592000000)
+    if (Math.abs(months) < 12) return rtf.format(months, 'month')
+    return rtf.format(Math.round(diffMs / 31536000000), 'year')
   }
 
   activityFor(key: string): number {
@@ -273,16 +423,16 @@ export class DashboardActivityComponent {
   }
 
   intensityClass(n: number): string {
-    if (n === 0) return 'bg-muted/40'
-    if (n < 5) return 'bg-chart-1/15'
-    if (n < 12) return 'bg-chart-1/35'
-    if (n < 20) return 'bg-chart-1/60'
-    return 'bg-chart-1/85'
+    if (n === 0) return INTENSITY_RAMP[0]
+    if (n < 5) return INTENSITY_RAMP[1]
+    if (n < 12) return INTENSITY_RAMP[2]
+    if (n < 20) return INTENSITY_RAMP[3]
+    return INTENSITY_RAMP[4]
   }
 
   cellClass(key: DateKey, inMonth: boolean, i: number): string {
     return [
-      'group relative isolate flex h-20 items-start justify-between border-b border-r p-1.5 text-left transition-all focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      'group focus-visible:ring-ring relative isolate flex h-20 items-start justify-between border-r border-b p-1.5 text-left transition-all focus-visible:z-10 focus-visible:ring-2 focus-visible:outline-none',
       (i + 1) % 7 === 0 ? 'border-r-0' : '',
       i >= 35 ? 'border-b-0' : '',
       !inMonth ? 'opacity-40' : '',
@@ -290,13 +440,11 @@ export class DashboardActivityComponent {
     ].filter(Boolean).join(' ')
   }
 
-  dateClass(key: DateKey, inMonth: boolean): string {
-    return [
-      'relative inline-flex size-5 items-center justify-center rounded-full text-xs tabular-nums z-10',
-      key === this.grid.todayKey ? 'bg-foreground text-background font-semibold ring-2 ring-primary' : '',
-      key !== this.grid.todayKey && inMonth ? 'text-foreground' : '',
-      !inMonth ? 'text-muted-foreground' : '',
-    ].filter(Boolean).join(' ')
+  dateClass(key: DateKey): string {
+    return (
+      'relative z-10 inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums ' +
+      (key === this.grid.todayKey ? 'bg-primary text-primary-foreground font-semibold' : 'text-foreground')
+    )
   }
 
   fmtKey(key: string): string {

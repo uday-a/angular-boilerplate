@@ -4,7 +4,7 @@
 // lazy chart primitives which are SSR-safe, LeafletMap + Tour wired for real).
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, PLATFORM_ID, signal, ViewChild } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
-import { Title } from '@angular/platform-browser'
+import { TranslatePipe } from '@ngx-translate/core'
 import { RouterLink } from '@angular/router'
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, Briefcase, Building2, Calendar as CalendarIcon, DollarSign,
@@ -12,6 +12,7 @@ import {
   Users, Zap, CheckCircle2,
 } from 'lucide-angular'
 import { createDashboardData, type Range } from '@/app/core/dashboard/dashboard-data'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
 import { formatPct } from '@/app/core/dashboard/funnel'
 import {
   customerRadius, customerRegions, kindBadgeVariant, kindDotBg, kindDotClass, markerSizeClass,
@@ -21,7 +22,7 @@ import { getChartColors } from '@/app/components/ui/charts/use-chart-theme'
 import type { DateRange, DayPickerSelected } from '@/app/components/ui/calendar/day-picker'
 import { UiPageBodyComponent, UiPageComponent, UiPageHeaderComponent, UiPageHeaderHeadingComponent } from '@/app/components/ui/page/page.component'
 import {
-  UiCardComponent, UiCardContentComponent, UiCardDescriptionComponent, UiCardFooterComponent,
+  UiCardActionComponent, UiCardComponent, UiCardContentComponent, UiCardDescriptionComponent, UiCardFooterComponent,
   UiCardHeaderComponent, UiCardTitleComponent,
 } from '@/app/components/ui/card/card.component'
 import { UiBadgeComponent } from '@/app/components/ui/badge/badge.component'
@@ -57,6 +58,8 @@ import {
 } from '@/app/components/ui/leaflet-map/leaflet-map.component'
 
 const TOUR_STORAGE_KEY = 'uipkge-dashboard-tour-dismissed'
+// Tour steps whose data-tour target differs from the i18n step key.
+const TOUR_TARGETS: Partial<Record<string, string>> = { table: 'table-link', sidebar: 'sidebar-nav' }
 
 // Region map: offices span SF → Sydney, so fitBounds snaps down to zoom 1
 // on this wide, short card (the world repeats). Zoom 2 shows it once,
@@ -70,12 +73,14 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
   imports: [
     LucideAngularModule,
     RouterLink,
+    TranslatePipe,
     UiAvatarComponent,
     UiAvatarFallbackComponent,
     UiBadgeComponent,
     UiBarChartComponent,
     UiButtonComponent,
     UiCalendarHeatmapComponent,
+    UiCardActionComponent,
     UiCardComponent,
     UiCardContentComponent,
     UiCardDescriptionComponent,
@@ -121,46 +126,48 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
     <ui-page>
       <ui-page-header>
         <ui-page-header-heading
-          title="Dashboard"
+          [title]="pageTitle()"
           description="Real-time overview of revenue, traffic, and operations."
         />
         <div slot="actions" class="flex flex-wrap items-center gap-2 sm:justify-end">
           <ui-tabs [value]="range()" (valueChange)="onRangeChange($event)" class="w-auto">
-            <ui-tabs-list class="h-9 w-auto">
-              <ui-tabs-trigger value="24h" class="text-xs px-2.5">24h</ui-tabs-trigger>
-              <ui-tabs-trigger value="7d" class="text-xs px-2.5">7d</ui-tabs-trigger>
-              <ui-tabs-trigger value="30d" class="text-xs px-2.5">30d</ui-tabs-trigger>
-              <ui-tabs-trigger value="qtd" class="text-xs px-2.5">QTD</ui-tabs-trigger>
-              <ui-tabs-trigger value="ytd" class="text-xs px-2.5">YTD</ui-tabs-trigger>
+            <ui-tabs-list class="h-8 w-auto">
+              <ui-tabs-trigger value="24h" size="sm">24h</ui-tabs-trigger>
+              <ui-tabs-trigger value="7d" size="sm">7d</ui-tabs-trigger>
+              <ui-tabs-trigger value="30d" size="sm">30d</ui-tabs-trigger>
+              <ui-tabs-trigger value="qtd" size="sm">QTD</ui-tabs-trigger>
+              <ui-tabs-trigger value="ytd" size="sm">YTD</ui-tabs-trigger>
             </ui-tabs-list>
           </ui-tabs>
           <ui-popover [open]="customOpen()" (openChange)="customOpen.set($event)">
             <button
               ui-button
               ui-popover-trigger
-              variant="outline"
+              [variant]="range() === 'custom' ? 'secondary' : 'outline'"
               size="sm"
-              class="gap-1.5 h-9"
+              class="gap-1.5"
             >
-              <lucide-icon [img]="CalendarIcon" class="size-4" />{{ range() === 'custom' && customSpan() ? customSpan() : 'Custom' }}
+              <lucide-icon [img]="CalendarIcon" class="size-4" aria-hidden="true" />{{
+                range() === 'custom' && customSpan() ? customSpan() : ('dashboard.range.custom' | translate)
+              }}
             </button>
             <ui-popover-content align="end" class="w-auto p-0">
               <ui-range-calendar [selected]="customCal()" (select)="onCustomSelect($any($event))" />
             </ui-popover-content>
           </ui-popover>
-          <button ui-button size="sm" class="gap-1.5 h-9">
-            <lucide-icon [img]="Sparkles" class="size-4" />Insights
+          <button ui-button size="sm" class="gap-1.5">
+            <lucide-icon [img]="Sparkles" class="size-4" aria-hidden="true" />Insights
           </button>
           <button
             ui-button
             variant="ghost"
-            size="icon"
-            class="text-muted-foreground size-9"
-            title="Take the tour"
-            aria-label="Take the tour"
+            size="icon-sm"
+            class="text-muted-foreground"
+            [title]="'dashboard.tour.replay' | translate"
+            [attr.aria-label]="'dashboard.tour.replay' | translate"
             (click)="replayTour()"
           >
-            <lucide-icon [img]="RotateCcw" class="size-4" />
+            <lucide-icon [img]="RotateCcw" class="size-4" aria-hidden="true" />
           </button>
         </div>
       </ui-page-header>
@@ -168,30 +175,30 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
       <ui-page-body class="@container space-y-4">
         <!-- WHY (Rule98): visible freshness stamp. The demo anchor is fixed
              (see createDashboardData asOfLabel) so SSR + client agree. -->
-        <p class="text-muted-foreground text-xs">Data as of {{ asOfLabel }}</p>
+        <p class="text-muted-foreground text-xs">{{ 'dashboard.asOf' | translate: { date: asOfLabel } }}</p>
         <!-- KPI strip: 5 tiles, each with a trend-only Sparkline (Rule59).
              Minis are shape, not scale -- Sparkline is zero-based. -->
         <div data-tour="kpis" class="grid grid-cols-2 gap-3 sm:gap-4 @2xl:grid-cols-3 @5xl:grid-cols-5">
-          <ui-stat-tile label="MRR" [value]="'$' + formatK(totalMrr)" [delta]="kpi().mrr.delta" [icon]="DollarSign" definition="Monthly recurring revenue across all plans.">
-            <ui-sparkline [data]="kpi().spark.revenue" [height]="36" class="mt-2" ariaLabel="MRR trend" />
+          <ui-stat-tile label="MRR" [value]="'$' + formatK(totalMrr)" [delta]="kpi().mrr.delta" [icon]="DollarSign" [definition]="'dashboard.kpiDefs.mrr' | translate">
+            <ui-sparkline [data]="kpi().spark.revenue" [height]="36" variant="area" class="mt-2" ariaLabel="MRR trend sparkline" />
           </ui-stat-tile>
 
-          <ui-stat-tile label="Active users" value="12,847" [delta]="kpi().users.delta" [icon]="UsersIcon" definition="Unique active accounts in the window.">
+          <ui-stat-tile label="Active users" value="12,847" [delta]="kpi().users.delta" [icon]="UsersIcon" [definition]="'dashboard.kpiDefs.users' | translate">
             <ui-sparkline [data]="kpi().spark.users" [height]="36" variant="bars" [color]="chartBlue()" class="mt-2" ariaLabel="Active users trend bar chart" />
           </ui-stat-tile>
 
-          <ui-stat-tile label="Requests / min" value="2,484" [delta]="kpi().rpm.delta" [icon]="ZapIcon" definition="Median requests served per minute.">
+          <ui-stat-tile label="Requests / min" value="2,484" [delta]="kpi().rpm.delta" [icon]="ZapIcon" [definition]="'dashboard.kpiDefs.rpm' | translate">
             <ui-sparkline [data]="kpi().spark.requests" [height]="36" variant="line" [color]="chartBlue()" class="mt-2" ariaLabel="Requests per minute trend line" />
           </ui-stat-tile>
 
           <!-- Avg latency: rising is bad, so delta tone is negative. -->
-          <ui-stat-tile label="Avg latency" value="412ms" [delta]="kpi().latency.delta" deltaTone="negative" [icon]="TimerIcon" definition="p95 API response time.">
+          <ui-stat-tile label="Avg latency" value="412ms" [delta]="kpi().latency.delta" deltaTone="negative" [icon]="TimerIcon" [definition]="'dashboard.kpiDefs.latency' | translate">
             <ui-sparkline [data]="kpi().spark.latency" [height]="36" variant="dots" class="mt-2" ariaLabel="Average latency trend line with sampled points" />
           </ui-stat-tile>
 
           <!-- Churn: down is good, so delta stays positive even though it's
                a negative number. -->
-          <ui-stat-tile label="Churn" value="1.8%" [delta]="kpi().churn.delta" [icon]="TrendingDownIcon" definition="Cancelled MRR share, trailing 30 days." class="col-span-2 @5xl:col-span-1">
+          <ui-stat-tile label="Churn" value="1.8%" [delta]="kpi().churn.delta" [icon]="TrendingDownIcon" [definition]="'dashboard.kpiDefs.churn' | translate" class="col-span-2 @5xl:col-span-1">
             <div class="space-y-1.5 pt-2">
               <ui-progress [value]="98.2" class="h-1.5" />
               <div class="flex justify-between text-xs text-muted-foreground tabular-nums">
@@ -205,12 +212,12 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
         <!-- Charts row 1: revenue combo (wide) + funnel + quota gauge -->
         <div data-tour="charts" class="grid gap-4 @4xl:grid-cols-3">
           <ui-card class="flex flex-col">
-            <ui-card-header class="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <ui-card-title class="text-base font-semibold">Revenue vs expenses</ui-card-title>
-                <ui-card-description>{{ displayLabel() }} · in USD</ui-card-description>
-              </div>
-              <span ui-badge variant="outline">MRR {{ kpi().mrr.delta }}</span>
+            <ui-card-header>
+              <h3 ui-card-title class="text-base font-semibold">Revenue vs expenses</h3>
+              <ui-card-description>{{ displayLabel() }} · in USD</ui-card-description>
+              <ui-card-action>
+                <span ui-badge variant="outline">MRR {{ kpi().mrr.delta }}</span>
+              </ui-card-action>
             </ui-card-header>
             <ui-card-content>
               <ui-raw-chart [option]="revenueComboOption()" [height]="300" ariaLabel="Revenue versus expenses chart" />
@@ -234,7 +241,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
           </ui-card>
           <ui-card class="flex flex-col">
             <ui-card-header>
-              <ui-card-title class="text-base font-semibold">Conversion funnel</ui-card-title>
+              <h3 ui-card-title class="text-base font-semibold">Conversion funnel</h3>
               <ui-card-description>{{ displayLabel() }} · {{ formatPctValue(funnelSummary().endToEnd) }} end-to-end</ui-card-description>
             </ui-card-header>
             <ui-card-content>
@@ -242,31 +249,31 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
             </ui-card-content>
           </ui-card>
           <ui-card class="flex flex-col">
-            <ui-card-header class="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <ui-card-title class="text-base font-semibold">Quota</ui-card-title>
-                <ui-card-description>API · monthly</ui-card-description>
-              </div>
-              <ui-tooltip-provider>
-                <ui-tooltip>
-                  <span ui-badge ui-tooltip-trigger variant="outline" tabindex="0" class="text-muted-foreground px-1.5">
-                    <lucide-icon [img]="CalendarIcon" class="size-3" aria-hidden="true" />
-                    <span class="sr-only">Not affected by range</span>
-                  </span>
-                  <ui-tooltip-content class="text-xs">Not affected by range</ui-tooltip-content>
-                </ui-tooltip>
-              </ui-tooltip-provider>
+            <ui-card-header>
+              <h3 ui-card-title class="text-base font-semibold">Quota</h3>
+              <ui-card-description>API · monthly</ui-card-description>
+              <ui-card-action>
+                <ui-tooltip-provider>
+                  <ui-tooltip>
+                    <span ui-badge ui-tooltip-trigger variant="outline" tabindex="0" class="text-muted-foreground px-1.5">
+                      <lucide-icon [img]="CalendarIcon" class="size-3" aria-hidden="true" />
+                      <span class="sr-only">{{ 'dashboard.range.staticNote' | translate }}</span>
+                    </span>
+                    <ui-tooltip-content class="text-xs">{{ 'dashboard.range.staticNote' | translate }}</ui-tooltip-content>
+                  </ui-tooltip>
+                </ui-tooltip-provider>
+              </ui-card-action>
             </ui-card-header>
             <ui-card-content class="flex flex-1 flex-col gap-4">
-              <ui-raw-chart [option]="gaugeOption()" [height]="220" ariaLabel="Monthly API quota usage gauge" />
+              <ui-raw-chart [option]="gaugeOption()" [height]="220" ariaLabel="API quota usage gauge" />
               <dl class="grid grid-cols-3 gap-2 border-t pt-4 text-center">
                 <div>
                   <dt class="text-muted-foreground text-xs">Used</dt>
-                  <dd class="text-sm font-medium tabular-nums">{{ formatK(quotaMeta.used) }}<span class="text-muted-foreground block text-xs font-normal">API calls</span></dd>
+                  <dd class="text-sm font-medium tabular-nums">{{ formatK(quotaMeta.used) }}<span class="text-muted-foreground block text-xs font-normal">{{ 'dashboard.quota.unit' | translate }}</span></dd>
                 </div>
                 <div>
                   <dt class="text-muted-foreground text-xs">Left</dt>
-                  <dd class="text-sm font-medium tabular-nums">{{ formatK(quotaMeta.remaining) }}<span class="text-muted-foreground block text-xs font-normal">API calls</span></dd>
+                  <dd class="text-sm font-medium tabular-nums">{{ formatK(quotaMeta.remaining) }}<span class="text-muted-foreground block text-xs font-normal">{{ 'dashboard.quota.unit' | translate }}</span></dd>
                 </div>
                 <div>
                   <dt class="text-muted-foreground text-xs">Resets</dt>
@@ -276,8 +283,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
             </ui-card-content>
             <ui-card-footer class="mt-auto">
               <a ui-button variant="ghost" size="sm" routerLink="/settings/billing" class="text-muted-foreground w-full gap-1 text-xs">
-                Need more quota? View plans
-                <lucide-icon [img]="ArrowRight" class="size-3.5" />
+                Need more quota? View plans<lucide-icon [img]="ArrowRight" class="size-3.5" aria-hidden="true" />
               </a>
             </ui-card-footer>
           </ui-card>
@@ -289,65 +295,65 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                height), so the charts fill the card instead of a fixed 200px. -->
           <ui-card class="flex flex-col">
             <ui-card-header>
-              <ui-card-title class="text-base font-semibold">{{ requestsBlock().title }}</ui-card-title>
+              <h3 ui-card-title class="text-base font-semibold">{{ requestsBlock().title }}</h3>
               <ui-card-description>{{ requestsBlock().subtitle }}</ui-card-description>
             </ui-card-header>
             <ui-card-content class="min-h-[200px] flex-1">
-              <ui-bar-chart [data]="requestsBlock().data" xField="x" yField="y" height="100%" unit="requests" [option]="compactValueAxis" ariaLabel="Requests by endpoint chart" />
+              <ui-bar-chart [data]="requestsBlock().data" xField="x" yField="y" height="100%" unit="requests" [option]="compactValueAxis" [ariaLabel]="requestsBlock().title" />
+            </ui-card-content>
+          </ui-card>
+          <ui-card class="flex flex-col">
+            <ui-card-header>
+              <h3 ui-card-title class="text-base font-semibold">Headcount by department</h3>
+              <ui-card-description>{{ totalHeadcount.toLocaleString() }} people across {{ totalDepartments }} departments</ui-card-description>
+              <ui-card-action>
+                <ui-tooltip-provider>
+                  <ui-tooltip>
+                    <span ui-badge ui-tooltip-trigger variant="outline" tabindex="0" class="text-muted-foreground px-1.5">
+                      <lucide-icon [img]="CalendarIcon" class="size-3" aria-hidden="true" />
+                      <span class="sr-only">{{ 'dashboard.range.staticNote' | translate }}</span>
+                    </span>
+                    <ui-tooltip-content class="text-xs">{{ 'dashboard.range.staticNote' | translate }}</ui-tooltip-content>
+                  </ui-tooltip>
+                </ui-tooltip-provider>
+              </ui-card-action>
+            </ui-card-header>
+            <ui-card-content class="min-h-[200px] flex-1">
+              <ui-treemap-chart [data]="segments" height="100%" ariaLabel="Headcount by department treemap" />
             </ui-card-content>
           </ui-card>
           <ui-card class="flex flex-col">
             <ui-card-header class="flex flex-row items-center justify-between space-y-0">
               <div>
-                <ui-card-title class="text-base font-semibold">Headcount by department</ui-card-title>
-                <ui-card-description>{{ totalHeadcount.toLocaleString() }} people across {{ totalDepartments }} departments</ui-card-description>
-              </div>
-              <ui-tooltip-provider>
-                <ui-tooltip>
-                  <span ui-badge ui-tooltip-trigger variant="outline" tabindex="0" class="text-muted-foreground px-1.5">
-                    <lucide-icon [img]="CalendarIcon" class="size-3" aria-hidden="true" />
-                    <span class="sr-only">Not affected by range</span>
-                  </span>
-                  <ui-tooltip-content class="text-xs">Not affected by range</ui-tooltip-content>
-                </ui-tooltip>
-              </ui-tooltip-provider>
-            </ui-card-header>
-            <ui-card-content class="min-h-[200px] flex-1">
-              <ui-treemap-chart [data]="segments" height="100%" ariaLabel="Headcount by department chart" />
-            </ui-card-content>
-          </ui-card>
-          <ui-card>
-            <ui-card-header class="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <ui-card-title class="text-base font-semibold">Active alerts</ui-card-title>
+                <h3 ui-card-title class="text-base font-semibold">Active alerts</h3>
                 <ui-card-description>5 open · 12 resolved today</ui-card-description>
               </div>
-              <a ui-button variant="ghost" size="sm" routerLink="/settings/activity" class="text-xs gap-1 h-8">
-                All<lucide-icon [img]="ArrowRight" class="size-3.5" />
-              </a>
+              <button ui-button variant="ghost" size="sm" class="h-8 gap-1 text-xs">
+                All<lucide-icon [img]="ArrowRight" class="size-3.5" aria-hidden="true" />
+              </button>
             </ui-card-header>
-            <ui-card-content class="pb-4">
+            <ui-card-content class="flex flex-1 flex-col pb-4">
               <!-- Timeline: one continuous rail, a severity node per alert. -->
               <!-- WHY (Rule81): trivial failed-state branch -- an empty alert
                    list renders an EmptyState instead of a blank card. -->
               @if (alerts.length) {
-                <ol>
+                <ol class="flex flex-1 flex-col justify-between">
                   @for (a of alerts; track a.title; let i = $index; let last = $last) {
                     <li class="relative flex gap-3 pb-4 last:pb-0">
                       @if (!last) {
                         <span class="bg-border absolute top-8 bottom-0 left-4 w-px -translate-x-1/2" aria-hidden="true"></span>
                       }
                       <span [class]="'ring-card relative z-10 flex size-8 shrink-0 items-center justify-center rounded-full ring-4 ' + severityClass[a.severity].node">
-                        <lucide-icon [img]="a.icon" class="size-4" />
+                        <lucide-icon [img]="a.icon" class="size-4" aria-hidden="true" />
                       </span>
                       <div class="min-w-0 flex-1 pt-0.5">
                         <div class="truncate text-sm font-medium" [title]="a.title">{{ a.title }}</div>
-                        <div class="text-muted-foreground line-clamp-1 text-xs" [title]="a.detail">{{ a.detail }}</div>
+                        <div class="text-muted-foreground line-clamp-1 text-xs">{{ a.detail }}</div>
                         <div class="mt-1.5 flex items-center gap-2">
                           <span [class]="'rounded-sm px-1.5 py-0.5 text-xs font-medium ' + severityClass[a.severity].badge">
                             {{ severityClass[a.severity].label }}
                           </span>
-                          <span class="text-muted-foreground min-w-0 truncate text-xs" [title]="a.source">{{ a.source }}</span>
+                          <span class="text-muted-foreground min-w-0 truncate text-xs">{{ a.source }}</span>
                           <span class="text-muted-foreground ml-auto shrink-0 text-xs tabular-nums">{{ a.age }}</span>
                         </div>
                       </div>
@@ -355,7 +361,11 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                   }
                 </ol>
               } @else {
-                <ui-empty-state [icon]="alertsEmptyIcon" title="No open alerts" description="New alerts will appear here.">
+                <ui-empty-state
+                  [icon]="alertsEmptyIcon"
+                  [title]="'dashboard.alerts.emptyTitle' | translate"
+                  [description]="'dashboard.alerts.emptyDescription' | translate"
+                >
                   <ng-template #alertsEmptyIcon><lucide-icon [img]="CheckCircle2Icon" /></ng-template>
                 </ui-empty-state>
               }
@@ -366,17 +376,18 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
         <!-- Customers by region: muted world map embedded in a scrollable page,
              so wheel zoom stays off and the wheel scrolls the page. -->
         <ui-card>
-          <ui-card-header class="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <ui-card-title class="text-base font-semibold">Customers by region</ui-card-title>
-              <ui-card-description>Where customers and teams are concentrated.</ui-card-description>
-            </div>
-            <span ui-badge variant="outline" class="tabular-nums">
-              <lucide-icon [img]="Building2" />
-              {{ officeLocations.length }} {{ officeLocations.length === 1 ? 'office' : 'offices' }}
-            </span>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base font-semibold">{{ 'dashboard.locations.widgetTitle' | translate }}</h3>
+            <ui-card-description>{{ 'dashboard.locations.widgetDescription' | translate }}</ui-card-description>
+            <ui-card-action>
+              <span ui-badge variant="outline" class="tabular-nums">
+                <lucide-icon [img]="Building2" class="size-3" aria-hidden="true" />
+                {{ officeCountLabel() }}
+              </span>
+            </ui-card-action>
           </ui-card-header>
-          <ui-card-content>
+          <!-- Map fills the card edge to edge (no inner frame), like locations. -->
+          <ui-card-content class="p-0">
             <div class="relative isolate">
               <ui-leaflet-map
                 #regionMap
@@ -386,7 +397,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                 [minZoom]="1"
                 [scrollWheelZoom]="false"
                 [navigation]="false"
-                class="h-[360px] w-full overflow-hidden rounded-lg border"
+                class="h-[360px] w-full overflow-hidden"
                 (created)="fitRegionMap(false)"
               >
                 @for (c of customerRegions; track c.id) {
@@ -399,7 +410,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                     [weight]="1.5"
                   >
                     <ui-leaflet-tooltip direction="top">
-                      <span class="text-xs"><span class="font-medium">{{ c.city }}</span> · {{ c.accounts }} {{ c.accounts === 1 ? 'account' : 'accounts' }}</span>
+                      <span class="text-xs"><span class="font-medium">{{ c.city }}</span> · {{ accountsLabel(c.accounts) }}</span>
                     </ui-leaflet-tooltip>
                   </ui-leaflet-circle-marker>
                 }
@@ -509,24 +520,25 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
               </div>
             </div>
           </ui-card-content>
-          <ui-card-footer class="justify-end">
+          <ui-card-footer class="justify-end pt-4">
             <a ui-button variant="ghost" size="sm" routerLink="/dashboard/locations" class="text-muted-foreground gap-1.5 text-xs">
-              <lucide-icon [img]="MapPin" class="size-3.5" />
-              View all locations
-              <lucide-icon [img]="ArrowRight" class="size-3.5" />
+              <lucide-icon [img]="MapPin" class="size-3.5" aria-hidden="true" />
+              {{ 'dashboard.locations.viewAll' | translate }}
+              <lucide-icon [img]="ArrowRight" class="size-3.5" aria-hidden="true" />
             </a>
           </ui-card-footer>
         </ui-card>
 
         <!-- Calendar heatmap (full width, dense) -->
         <ui-card>
-          <ui-card-header class="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <ui-card-title class="text-base font-semibold">Deploy activity · last 365 days</ui-card-title>
-              <ui-card-description>{{ totalDeploys.toLocaleString() }} deploys · longest streak 18 days · As of {{ asOfLabel }}</ui-card-description>
-            </div>
-            <div class="flex flex-wrap items-center justify-end gap-2 text-xs text-muted-foreground">
-              <span ui-badge variant="outline">Not affected by range</span>
+          <ui-card-header>
+            <h3 ui-card-title class="text-base font-semibold">Deploy activity · last 365 days</h3>
+            <ui-card-description
+              >{{ totalDeploys.toLocaleString() }} deploys · longest streak 18 days ·
+              {{ 'dashboard.heatmap.asOf' | translate: { date: asOfLabel } }}</ui-card-description
+            >
+            <ui-card-action class="text-muted-foreground flex flex-wrap items-center justify-end gap-2 text-xs">
+              <span ui-badge variant="outline">{{ 'dashboard.range.staticNote' | translate }}</span>
               <span>Less</span>
               <div class="flex gap-0.5">
                 <span class="bg-chart-1/10 size-2.5 rounded-sm"></span>
@@ -535,7 +547,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                 <span class="bg-chart-1 size-2.5 rounded-sm"></span>
               </div>
               <span>More</span>
-            </div>
+            </ui-card-action>
           </ui-card-header>
           <ui-card-content>
             <ui-calendar-heatmap
@@ -544,7 +556,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
               [colorRange]="calendarColorRange()"
               [option]="calendarOption()"
               [height]="160"
-              ariaLabel="Daily activity calendar heatmap"
+              ariaLabel="Deploy activity heatmap for the last 365 days"
             />
           </ui-card-content>
         </ui-card>
@@ -553,7 +565,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
         <div class="grid gap-4 @4xl:grid-cols-3">
           <ui-card class="flex flex-col">
             <ui-card-header>
-              <ui-card-title class="text-base font-semibold">Top products by MRR</ui-card-title>
+              <h3 ui-card-title class="text-base font-semibold">Top products by MRR</h3>
               <ui-card-description>5 products · \${{ formatK(totalMrr) }} total</ui-card-description>
             </ui-card-header>
             <ui-card-content class="space-y-3">
@@ -598,7 +610,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
 
           <ui-card class="flex flex-col">
             <ui-card-header>
-              <ui-card-title class="text-base font-semibold">Top customers</ui-card-title>
+              <h3 ui-card-title class="text-base font-semibold">Top customers</h3>
               <ui-card-description>By MRR · 6 of 142 accounts</ui-card-description>
             </ui-card-header>
             <ui-card-content class="divide-y">
@@ -639,7 +651,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
                       <p class="text-muted-foreground text-xs">{{ item.detail }}</p>
                     </div>
                   </div>
-                  <span class="text-muted-foreground ml-3 text-xs whitespace-nowrap">{{ item.age }}</span>
+                  <span class="text-muted-foreground ml-3 text-xs whitespace-nowrap tabular-nums">{{ item.age }}</span>
                 </ui-data-list-item>
               }
             </ui-data-list>
@@ -652,9 +664,9 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
         <!-- Full data-table entry point (also a tour target). -->
         <div data-tour="table-link" class="flex justify-center">
           <a ui-button variant="ghost" size="sm" routerLink="/dashboard/data-table" class="text-muted-foreground gap-1.5 text-xs">
-            <lucide-icon [img]="Table2" class="size-3.5" />
-            Open the full data table
-            <lucide-icon [img]="ArrowRight" class="size-3.5" />
+            <lucide-icon [img]="Table2" class="size-3.5" aria-hidden="true" />
+            {{ 'dashboard.tableLink.label' | translate }}
+            <lucide-icon [img]="ArrowRight" class="size-3.5" aria-hidden="true" />
           </a>
         </div>
       </ui-page-body>
@@ -672,7 +684,7 @@ const REGION_VIEW = { center: [20, 14] as [number, number], zoom: 2 }
         @if (tourOpen()) {
           <div class="bg-popover text-popover-foreground fixed right-4 bottom-4 z-[1002] flex items-center gap-2 rounded-lg border px-3 py-2 shadow-lg">
             <ui-checkbox id="tour-dont-show" [checked]="dontShowAgain()" (checkedChange)="dontShowAgain.set($event === true)" />
-            <label ui-label for="tour-dont-show" class="cursor-pointer text-xs font-normal">Don&#39;t show again</label>
+            <label ui-label for="tour-dont-show" class="cursor-pointer text-xs font-normal">{{ 'dashboard.tour.dontShowAgain' | translate }}</label>
           </div>
         }
       }
@@ -699,6 +711,8 @@ export class DashboardIndexComponent implements OnInit {
   protected readonly UsersIcon = Users
   protected readonly ZapIcon = Zap
 
+  private readonly i18n = inject(I18nService)
+  readonly pageTitle = injectPageTitle()
   private readonly platformId = inject(PLATFORM_ID)
   readonly isBrowser = signal(isPlatformBrowser(this.platformId))
 
@@ -781,71 +795,41 @@ export class DashboardIndexComponent implements OnInit {
     if (!se) return null
     // WHY (Rule71): the label carries the year so "Sep 5 – Sep 12" is never
     // ambiguous across year boundaries.
-    const df = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    return `${df.format(se.start)} – ${df.format(se.end)}`
+    const df = new Intl.DateTimeFormat(this.i18n.lang(), { month: 'short', day: 'numeric', year: 'numeric' })
+    return this.i18n.t('dashboard.range.customLabel', { start: df.format(se.start), end: df.format(se.end) })
   })
 
   readonly displayLabel = computed(() =>
     this.range() === 'custom' && this.customSpan() ? this.customSpan()! : this.rangeLabel(),
   )
 
-  readonly tourSteps = computed<TourStep[]>(() => {
-    const nav = { prevButtonText: 'Back', nextButtonText: 'Next', finishButtonText: 'Finish' }
-    return [
-      {
-        target: '[data-tour="kpis"]',
-        title: 'Your key metrics',
-        description: 'MRR, active users, latency and churn at a glance. Each tile carries its own mini-chart.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="charts"]',
-        title: 'Trends and breakdowns',
-        description: 'Revenue, funnel and quota charts follow the range tabs above — switch ranges to recompute.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="table-link"]',
-        title: 'Dig into the rows',
-        description: 'Open the full data table to sort, filter and export the records behind these charts.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="palette"]',
-        title: 'Command palette',
-        description: 'Press ⌘K anywhere to jump between pages and run commands without touching the mouse.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="theme"]',
-        title: 'Theme switcher',
-        description: 'Flip between light, dark and system themes. Charts and surfaces follow automatically.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="sidebar-nav"]',
-        title: 'Navigation',
-        description: 'Everything lives here: the dashboard, kanban, customers, calendar, locations, settings and admin. Collapse it to icons with the toggle at the top.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="profile"]',
-        title: 'Your profile',
-        description: 'Open your account, billing and notification settings, or sign out.',
-        ...nav,
-      },
-      {
-        target: '[data-tour="github"]',
-        title: 'Enjoying UIPKGE?',
-        description: 'If this starter saves you time, a star on GitHub helps others find it.',
-        ...nav,
-      },
-    ]
+  readonly officeCountLabel = computed(() => {
+    this.i18n.lang()
+    return this.i18n.tc('dashboard.locations.officeCount', officeLocations.length)
   })
 
-  constructor() {
-    inject(Title).setTitle('Dashboard')
+  accountsLabel(n: number): string {
+    this.i18n.lang()
+    return this.i18n.tc('dashboard.locations.accounts', n)
   }
+
+  // ponytail: the GitHub step's "Star on GitHub" action is dropped -- the
+  // Angular Tour has no step action slot yet (registry-angular lacks it too).
+  readonly tourSteps = computed<TourStep[]>(() => {
+    this.i18n.lang()
+    const t = (k: string) => this.i18n.t(k)
+    const nav = {
+      prevButtonText: t('dashboard.tour.back'),
+      nextButtonText: t('dashboard.tour.next'),
+      finishButtonText: t('dashboard.tour.finish'),
+    }
+    return (['kpis', 'charts', 'table', 'palette', 'theme', 'sidebar', 'profile', 'github'] as const).map((step) => ({
+      target: `[data-tour="${TOUR_TARGETS[step] ?? step}"]`,
+      title: t(`dashboard.tour.steps.${step}.title`),
+      description: t(`dashboard.tour.steps.${step}.description`),
+      ...nav,
+    }))
+  })
 
   ngOnInit(): void {
     if (!this.isBrowser()) return

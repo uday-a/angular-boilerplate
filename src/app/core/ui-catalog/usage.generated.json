@@ -1,0 +1,599 @@
+{
+  "ui": {
+    "accordion": [
+      "/",
+      "/pricing",
+      "/support"
+    ],
+    "area-chart": [],
+    "avatar": [
+      "/",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/dashboard/messages",
+      "/projects",
+      "/settings/account",
+      "/settings/team",
+      "layout:dashboard"
+    ],
+    "badge": [
+      "/",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/feedback",
+      "/pricing",
+      "/projects",
+      "/settings/api-keys",
+      "/settings/billing",
+      "/settings/integrations",
+      "/settings/security",
+      "/settings/team",
+      "/support",
+      "layout:dashboard"
+    ],
+    "bar-chart": [
+      "/dashboard"
+    ],
+    "breadcrumb": [
+      "layout:dashboard"
+    ],
+    "button": [
+      "/",
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/activity",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/form-example",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/feedback",
+      "/forgot-password",
+      "/invite/:token",
+      "/login",
+      "/mfa",
+      "/onboarding",
+      "/pricing",
+      "/privacy",
+      "/projects",
+      "/projects/:slug",
+      "/settings/account",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/billing",
+      "/settings/general",
+      "/settings/integrations",
+      "/settings/limits",
+      "/settings/notifications",
+      "/settings/security",
+      "/settings/team",
+      "/sign-up",
+      "/support",
+      "/terms",
+      "layout:dashboard"
+    ],
+    "calendar": [
+      "/dashboard",
+      "/dashboard/data-table",
+      "/dashboard/kanban"
+    ],
+    "calendar-heatmap": [
+      "/dashboard"
+    ],
+    "card": [
+      "/",
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/activity",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/form-example",
+      "/dashboard/forms",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/feedback",
+      "/forgot-password",
+      "/invite/:token",
+      "/login",
+      "/mfa",
+      "/onboarding",
+      "/pricing",
+      "/projects",
+      "/projects/:slug",
+      "/settings",
+      "/settings/account",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/billing",
+      "/settings/general",
+      "/settings/integrations",
+      "/settings/limits",
+      "/settings/notifications",
+      "/settings/security",
+      "/settings/team",
+      "/sign-up",
+      "/support"
+    ],
+    "charts": [
+      "/dashboard",
+      "/dashboard/locations"
+    ],
+    "checkbox": [
+      "/admin/roles",
+      "/dashboard",
+      "/dashboard/data-table",
+      "/dashboard/forms",
+      "/login",
+      "/sign-up"
+    ],
+    "collapsible": [
+      "layout:dashboard"
+    ],
+    "command": [
+      "layout:dashboard"
+    ],
+    "context-menu": [
+      "/dashboard/calendar"
+    ],
+    "data-list": [
+      "/dashboard"
+    ],
+    "dialog": [
+      "/admin/users",
+      "/dashboard/calendar",
+      "/dashboard/kanban",
+      "/dashboard/messages",
+      "/projects",
+      "/projects/:slug",
+      "/settings/api-keys",
+      "/settings/team"
+    ],
+    "dropdown-menu": [
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "layout:dashboard"
+    ],
+    "empty-state": [
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/activity",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/projects",
+      "/projects/:slug",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/team"
+    ],
+    "file-upload": [
+      "/feedback"
+    ],
+    "form": [
+      "/dashboard/form-example"
+    ],
+    "funnel-chart": [
+      "/dashboard"
+    ],
+    "gauge-chart": [],
+    "icon-box": [
+      "/dashboard",
+      "/settings"
+    ],
+    "input": [
+      "/",
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/form-example",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/feedback",
+      "/forgot-password",
+      "/login",
+      "/onboarding",
+      "/pricing",
+      "/privacy",
+      "/projects",
+      "/projects/:slug",
+      "/settings/account",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/general",
+      "/settings/team",
+      "/sign-up",
+      "/terms"
+    ],
+    "kpi-grid": [],
+    "label": [
+      "/",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/feedback",
+      "/forgot-password",
+      "/login",
+      "/onboarding",
+      "/projects",
+      "/projects/:slug",
+      "/settings/account",
+      "/settings/api-keys",
+      "/settings/general",
+      "/settings/notifications",
+      "/settings/security",
+      "/settings/team",
+      "/sign-up"
+    ],
+    "leaflet-map": [
+      "/dashboard",
+      "/dashboard/locations"
+    ],
+    "line-chart": [],
+    "overlay-scroll": [
+      "/dashboard/calendar",
+      "/dashboard/messages",
+      "layout:dashboard"
+    ],
+    "page": [
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/activity",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/form-example",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/feedback",
+      "/projects",
+      "/projects/:slug",
+      "/settings",
+      "/settings/account",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/billing",
+      "/settings/general",
+      "/settings/integrations",
+      "/settings/limits",
+      "/settings/notifications",
+      "/settings/security",
+      "/settings/team",
+      "/support"
+    ],
+    "pin-input": [
+      "/mfa"
+    ],
+    "popover": [
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/dashboard/messages",
+      "/settings/team",
+      "layout:dashboard"
+    ],
+    "popper": [],
+    "progress": [
+      "/dashboard"
+    ],
+    "radio-group": [
+      "/dashboard/forms",
+      "/feedback"
+    ],
+    "range-calendar": [
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/data-table",
+      "/settings/team"
+    ],
+    "raw-chart": [
+      "/dashboard"
+    ],
+    "section-card": [
+      "/dashboard"
+    ],
+    "select": [
+      "/",
+      "/admin/users",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/onboarding",
+      "/settings/api-keys",
+      "/settings/general",
+      "/settings/team"
+    ],
+    "separator": [
+      "/",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/forms",
+      "/dashboard/messages",
+      "/login",
+      "/pricing",
+      "/privacy",
+      "/settings/account",
+      "/settings/general",
+      "/settings/integrations",
+      "/settings/notifications",
+      "/settings/security",
+      "/sign-up",
+      "/terms",
+      "layout:dashboard"
+    ],
+    "sheet": [
+      "/",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/pricing",
+      "/privacy",
+      "/terms"
+    ],
+    "sidebar": [
+      "layout:dashboard"
+    ],
+    "skeleton": [
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/projects",
+      "/projects/:slug"
+    ],
+    "slider": [
+      "/dashboard/forms"
+    ],
+    "sonner": [
+      "/admin/users",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/forgot-password",
+      "/login",
+      "/settings/billing",
+      "/settings/team",
+      "app:root"
+    ],
+    "sparkline": [
+      "/dashboard"
+    ],
+    "switch": [
+      "/dashboard/forms",
+      "/settings/general",
+      "/settings/notifications",
+      "/settings/security"
+    ],
+    "table": [
+      "/admin/users",
+      "/dashboard/data-table",
+      "/settings/activity",
+      "/settings/api-keys",
+      "/settings/billing",
+      "/settings/team"
+    ],
+    "tabs": [
+      "/dashboard"
+    ],
+    "textarea": [
+      "/",
+      "/dashboard/form-example",
+      "/dashboard/forms",
+      "/dashboard/kanban",
+      "/dashboard/messages",
+      "/feedback",
+      "/projects",
+      "/projects/:slug",
+      "/settings/account"
+    ],
+    "theme-switch": [
+      "layout:dashboard"
+    ],
+    "toggle": [],
+    "toggle-group": [
+      "/",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/pricing"
+    ],
+    "tooltip": [
+      "/admin/roles",
+      "/admin/users",
+      "/dashboard",
+      "/dashboard/activity",
+      "/dashboard/calendar",
+      "/dashboard/data-table",
+      "/dashboard/kanban",
+      "/dashboard/locations",
+      "/dashboard/messages",
+      "/settings/billing",
+      "/settings/team"
+    ],
+    "tour": [
+      "/dashboard"
+    ],
+    "treemap-chart": [
+      "/dashboard"
+    ]
+  },
+  "blocks": {
+    "auth-mfa": {
+      "file": "auth-mfa/auth-mfa.component.ts",
+      "routes": [
+        "/mfa"
+      ]
+    },
+    "auth-password-reset": {
+      "file": "auth-password-reset/auth-password-reset.component.ts",
+      "routes": [
+        "/forgot-password"
+      ]
+    },
+    "auth-sign-in": {
+      "file": "auth-sign-in/auth-sign-in.component.ts",
+      "routes": [
+        "/login"
+      ]
+    },
+    "auth-sign-up": {
+      "file": "auth-sign-up/auth-sign-up.component.ts",
+      "routes": [
+        "/sign-up"
+      ]
+    },
+    "bento-01": {
+      "file": "bento-01/bento-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "command-palette": {
+      "file": "command-palette/command-palette.component.ts",
+      "routes": [
+        "layout:dashboard"
+      ]
+    },
+    "contact-01": {
+      "file": "contact-01/contact-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "cta-01": {
+      "file": "cta-01/cta-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "demo-data-banner": {
+      "file": "demo-data-banner/demo-data-banner.component.ts",
+      "routes": [
+        "/admin/roles",
+        "/dashboard/activity",
+        "/feedback",
+        "/projects",
+        "/settings/billing",
+        "/settings/limits"
+      ]
+    },
+    "faq-01": {
+      "file": "faq-01/faq-01.component.ts",
+      "routes": [
+        "/",
+        "/pricing"
+      ]
+    },
+    "features-01": {
+      "file": "features-01/features-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "footer-01": {
+      "file": "footer-01/footer-01.component.ts",
+      "routes": [
+        "/",
+        "/pricing",
+        "/privacy",
+        "/terms"
+      ]
+    },
+    "header-01": {
+      "file": "header-01/header-01.component.ts",
+      "routes": [
+        "/",
+        "/pricing",
+        "/privacy",
+        "/terms"
+      ]
+    },
+    "hero-01": {
+      "file": "hero-01/hero-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "kanban-task-board": {
+      "file": "kanban-task-board/kanban-task-board.component.ts",
+      "routes": [
+        "/dashboard/kanban"
+      ]
+    },
+    "locale-switcher": {
+      "file": "locale-switcher/locale-switcher.component.ts",
+      "routes": [
+        "layout:dashboard"
+      ]
+    },
+    "logos-01": {
+      "file": "logos-01/logos-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "notifications-popover": {
+      "file": "notifications-popover/notifications-popover.component.ts",
+      "routes": [
+        "layout:dashboard"
+      ]
+    },
+    "pricing-01": {
+      "file": "pricing-01/pricing-01.component.ts",
+      "routes": [
+        "/",
+        "/pricing"
+      ]
+    },
+    "sidebar-02": {
+      "file": "sidebar-02/sidebar-02.component.ts",
+      "routes": [
+        "layout:dashboard"
+      ]
+    },
+    "stat-tile": {
+      "file": "stat-tile/stat-tile.component.ts",
+      "routes": [
+        "/dashboard",
+        "/dashboard/activity",
+        "/dashboard/calendar",
+        "/dashboard/locations"
+      ]
+    },
+    "testimonials-01": {
+      "file": "testimonials-01/testimonials-01.component.ts",
+      "routes": [
+        "/"
+      ]
+    },
+    "theme-customizer": {
+      "file": "theme-customizer/theme-customizer.component.ts",
+      "routes": [
+        "layout:dashboard"
+      ]
+    },
+    "usage-bar": {
+      "file": "usage-bar/usage-bar.component.ts",
+      "routes": [
+        "/settings/billing",
+        "/settings/limits"
+      ]
+    }
+  }
+}

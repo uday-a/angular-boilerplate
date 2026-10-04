@@ -11,7 +11,6 @@
 // and keep the schema + template shape.
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core'
 import { FormControl, FormGroup, ReactiveFormsModule, type AbstractControl, type ValidationErrors } from '@angular/forms'
-import { Title } from '@angular/platform-browser'
 import { z } from 'zod'
 import {
   UiCardComponent,
@@ -32,6 +31,13 @@ import {
   UiFormMessageComponent,
   UiFormDirective,
 } from '@/app/components/ui/form/form.component'
+import {
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page'
+import { injectPageTitle } from '@/app/core/i18n'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -69,68 +75,81 @@ function zodField(schema: z.ZodType<string>): (control: AbstractControl) => Vali
     UiFormLabelComponent,
     UiFormMessageComponent,
     UiInputComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiTextareaComponent,
   ],
   template: `
-    <div class="max-w-3xl space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">Validated form</h1>
-        <p class="text-muted-foreground text-sm">
-          Reference pattern. zod schema + Reactive Forms + registry <code>&lt;Form&gt;</code> components.
-        </p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading
+          [title]="pageTitle()"
+          description="A profile form that checks every field before it saves."
+        />
+      </ui-page-header>
 
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">Profile</h3>
-          <p ui-card-description>Validates on submit. Edit and click Save.</p>
-        </div>
-        <div ui-card-content>
-          <form [formGroup]="form" uiForm class="space-y-4" (ngSubmit)="onSubmit()">
-            <ng-container uiFormField="name">
-              <ui-form-item>
-                <label ui-form-label>Name</label>
-                <ui-input formControlName="name" uiFormControl />
-                <ui-form-description>Shown to other workspace members.</ui-form-description>
-                <ui-form-message />
-              </ui-form-item>
-            </ng-container>
-
-            <ng-container uiFormField="email">
-              <ui-form-item>
-                <label ui-form-label>Email</label>
-                <ui-input formControlName="email" type="email" uiFormControl />
-                <ui-form-message />
-              </ui-form-item>
-            </ng-container>
-
-            <ng-container uiFormField="bio">
-              <ui-form-item>
-                <label ui-form-label>Bio</label>
-                <ui-textarea formControlName="bio" [rows]="3" uiFormControl />
-                <ui-form-description>280 characters max.</ui-form-description>
-                <ui-form-message />
-              </ui-form-item>
-            </ng-container>
-
-            <div class="flex justify-end">
-              <button ui-button type="submit">Save</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      @if (submitted()) {
+      <ui-page-body class="max-w-3xl space-y-4">
         <div ui-card>
           <div ui-card-header>
-            <h3 ui-card-title class="text-base">Submitted value</h3>
+            <h3 ui-card-title class="text-base">Profile</h3>
+            <p ui-card-description>Validates on submit. Edit and click Save.</p>
           </div>
           <div ui-card-content>
-            <pre class="bg-muted rounded-md p-3 text-xs"><code>{{ submittedJson() }}</code></pre>
+            <form [formGroup]="form" uiForm class="space-y-4" (ngSubmit)="onSubmit()">
+              <ng-container uiFormField="name">
+                <ui-form-item>
+                  <label ui-form-label>Name</label>
+                  <ui-input formControlName="name" uiFormControl />
+                  <ui-form-description>Shown to other workspace members.</ui-form-description>
+                  <ui-form-message />
+                </ui-form-item>
+              </ng-container>
+
+              <ng-container uiFormField="email">
+                <ui-form-item>
+                  <label ui-form-label>Email</label>
+                  <ui-input formControlName="email" type="email" uiFormControl />
+                  <ui-form-message />
+                </ui-form-item>
+              </ng-container>
+
+              <ng-container uiFormField="bio">
+                <ui-form-item>
+                  <label ui-form-label>Bio</label>
+                  <ui-textarea formControlName="bio" [rows]="3" uiFormControl />
+                  <ui-form-description>280 characters max.</ui-form-description>
+                  <ui-form-message />
+                </ui-form-item>
+              </ng-container>
+
+              <div class="flex justify-end">
+                <button ui-button type="submit">Save</button>
+              </div>
+            </form>
           </div>
         </div>
-      }
-    </div>
+
+        @if (submitted(); as sub) {
+          <div ui-card>
+            <div ui-card-header>
+              <h3 ui-card-title class="text-base">Saved profile</h3>
+            </div>
+            <div ui-card-content>
+              <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                <dt class="text-muted-foreground">Name</dt>
+                <dd>{{ sub.name }}</dd>
+                <dt class="text-muted-foreground">Email</dt>
+                <dd>{{ sub.email }}</dd>
+                <dt class="text-muted-foreground">Bio</dt>
+                <dd>{{ sub.bio || '—' }}</dd>
+              </dl>
+            </div>
+          </div>
+        }
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class DashboardFormExampleComponent {
@@ -141,11 +160,7 @@ export class DashboardFormExampleComponent {
   })
 
   readonly submitted = signal<Profile | null>(null)
-  readonly submittedJson = signal('')
-
-  constructor(title: Title) {
-    title.setTitle('Validated form · Example')
-  }
+  readonly pageTitle = injectPageTitle()
 
   onSubmit(): void {
     if (this.form.invalid) return
@@ -153,6 +168,5 @@ export class DashboardFormExampleComponent {
     const parsed = profileSchema.safeParse(value)
     if (!parsed.success) return
     this.submitted.set(parsed.data)
-    this.submittedJson.set(JSON.stringify(parsed.data, null, 2))
   }
 }

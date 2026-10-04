@@ -17,14 +17,15 @@ import {
   UiSheetHeaderComponent,
   UiSheetTitleComponent,
 } from '@/app/components/ui/sheet/sheet.component'
-import { UiAvatarComponent, UiAvatarFallbackComponent } from '@/app/components/ui/avatar/avatar.component'
+import {
+  KanbanDueBadgeComponent,
+  KanbanPriorityBadgeComponent,
+  KanbanUserAvatarComponent,
+} from '@/app/components/blocks/kanban-task-board/kanban-parts'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
 import {
   fileIconMap,
   findTaskById,
-  formatDueDate,
-  getDueStatus,
-  getInitials,
   getTaskColumn,
   priorityConfig,
   type KanbanColumn,
@@ -53,8 +54,9 @@ export interface KanbanSheetComment {
     UiSheetFooterComponent,
     UiSheetHeaderComponent,
     UiSheetTitleComponent,
-    UiAvatarComponent,
-    UiAvatarFallbackComponent,
+    KanbanDueBadgeComponent,
+    KanbanPriorityBadgeComponent,
+    KanbanUserAvatarComponent,
     UiButtonComponent,
   ],
   template: `
@@ -78,10 +80,7 @@ export interface KanbanSheetComment {
                   </option>
                 }
               </select>
-              <span [class]="priorityPillClass(t)">
-                <span [class]="priorityDotClass(t)"></span>
-                {{ priorityLabel(t) }}
-              </span>
+              <kanban-priority-badge [priority]="t.priority" iconSize="size-3" />
             </div>
             <ui-sheet-title class="text-base leading-snug font-semibold tracking-tight">
               {{ t.title }}
@@ -109,19 +108,14 @@ export interface KanbanSheetComment {
             <div class="bg-border h-px"></div>
 
             <div class="flex items-center gap-3">
-              <ui-avatar class="size-8">
-                <ui-avatar-fallback>{{ initialsOf(t.assignee.name) }}</ui-avatar-fallback>
-              </ui-avatar>
+              <kanban-user-avatar [name]="t.assignee.name" [color]="t.assignee.color" size="md" />
               <div>
                 <p class="text-sm leading-tight font-medium">{{ t.assignee.name }}</p>
                 <p class="text-muted-foreground text-xs">Assignee</p>
               </div>
               <div class="ml-auto text-right">
                 @if (t.dueDate) {
-                  <p [class]="dueClass(t)">
-                    <lucide-icon [img]="ClockIcon" class="size-3" />
-                    {{ dueLabel(t) }}
-                  </p>
+                  <kanban-due-badge [dueDate]="t.dueDate" />
                 } @else {
                   <p class="text-muted-foreground flex items-center gap-1 text-sm leading-tight">
                     <lucide-icon [img]="ClockIcon" class="size-3" />
@@ -192,9 +186,7 @@ export interface KanbanSheetComment {
                 <ul class="space-y-2.5">
                   @for (comment of t.commentItems; track comment.id) {
                     <li class="flex gap-2.5">
-                      <ui-avatar class="size-7 shrink-0">
-                        <ui-avatar-fallback class="text-xs">{{ initialsOf(comment.author) }}</ui-avatar-fallback>
-                      </ui-avatar>
+                      <kanban-user-avatar [name]="comment.author" [color]="comment.authorColor" size="sm" />
                       <div class="min-w-0 flex-1">
                         <p class="flex items-baseline gap-2">
                           <span class="text-xs font-medium">{{ comment.author }}</span>
@@ -293,39 +285,15 @@ export class KanbanTaskSheetComponent {
     return cn('h-1 w-full shrink-0', priorityConfig[task.priority].bg)
   }
 
-  priorityLabel(task: KanbanTask): string {
-    return priorityConfig[task.priority].label
-  }
 
-  priorityPillClass(task: KanbanTask): string {
-    return cn('inline-flex items-center gap-1.5 text-xs font-medium', priorityConfig[task.priority].class)
-  }
 
-  priorityDotClass(task: KanbanTask): string {
-    return cn('size-1.5 rounded-full', priorityConfig[task.priority].bg)
-  }
 
   tagPillClass(color: string): string {
     return cn('rounded-md px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset', color)
   }
 
-  dueLabel(task: KanbanTask): string {
-    return task.dueDate ? formatDueDate(task.dueDate) : ''
-  }
 
-  dueClass(task: KanbanTask): string {
-    const status = getDueStatus(task.dueDate)
-    return cn(
-      'flex items-center gap-1 text-sm leading-tight',
-      status === 'overdue' && 'text-destructive font-medium',
-      status === 'soon' && 'text-warning font-medium',
-      (status === 'normal' || status === null) && 'text-muted-foreground',
-    )
-  }
 
-  initialsOf(name: string): string {
-    return getInitials(name)
-  }
 
   subtasksOf(task: KanbanTask): { id: string, title: string, done: boolean }[] {
     return task.subtaskIds.map((id) => {

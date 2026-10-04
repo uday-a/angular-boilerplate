@@ -87,7 +87,9 @@ function blendOver(fg: string, bg: string, alpha: number): string {
           }
         </ul>
       }
-      <table class="sr-only">
+      <!-- sr-only on a wrapper div: a table can't shrink, so an sr-only
+           table still widens the page at 375px. -->
+      <div class="sr-only"><table>
         <caption>Conversion funnel by stage</caption>
         <thead>
           <tr>
@@ -107,7 +109,7 @@ function blendOver(fg: string, bg: string, alpha: number): string {
             </tr>
           }
         </tbody>
-      </table>
+      </table></div>
     </div>
   `,
 })

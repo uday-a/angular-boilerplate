@@ -8,10 +8,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core'
 import { toSignal } from '@angular/core/rxjs-interop'
 import { FormsModule } from '@angular/forms'
-import { Title } from '@angular/platform-browser'
-import { Bell, Check, Languages, LoaderCircle } from 'lucide-angular'
+import { Check, LoaderCircle } from 'lucide-angular'
 import { LucideAngularModule } from 'lucide-angular'
-import { I18nService, SUPPORTED_LOCALES } from '@/app/core/i18n'
+import { I18nService, SUPPORTED_LOCALES, injectPageTitle } from '@/app/core/i18n'
 import { formatMoney } from '@/app/core/utils/cn'
 import {
   UiCardComponent,
@@ -39,6 +38,12 @@ import {
 } from '@/app/components/ui/radio-group/radio-group.component'
 import { UiSliderComponent } from '@/app/components/ui/slider/slider.component'
 import { UiSeparatorComponent } from '@/app/components/ui/separator/separator.component'
+import {
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page'
 
 const NOTIFICATION_OPTIONS = [
   { value: 'product', label: 'Product updates' },
@@ -63,6 +68,10 @@ const NOTIFICATION_OPTIONS = [
     UiCheckboxComponent,
     UiInputComponent,
     UiLabelComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiRadioGroupComponent,
     UiRadioGroupItemComponent,
     UiSelectComponent,
@@ -76,248 +85,247 @@ const NOTIFICATION_OPTIONS = [
     UiTextareaComponent,
   ],
   template: `
-    <form class="max-w-3xl space-y-4" (submit)="onSubmit($event)">
-      <header class="flex flex-wrap items-end justify-between gap-4">
-        <div class="space-y-1">
-          <h1 class="text-2xl font-semibold tracking-tight">Forms</h1>
-          <p class="text-muted-foreground text-sm">Profile, account, notification and billing form patterns.</p>
-        </div>
-        <div class="flex items-center gap-3">
-          @if (savedAt()) {
-            <span class="text-muted-foreground inline-flex items-center gap-1 text-xs">
-              <lucide-icon [img]="Check" class="size-3 text-success" />Saved at {{ savedAt() }}
-            </span>
-          }
-          <button ui-button type="submit" size="sm" [disabled]="submitting()" class="gap-1.5">
-            @if (submitting()) {
-              <lucide-icon [img]="LoaderCircle" class="size-3.5 animate-spin" />
-            }
-            {{ submitting() ? 'Saving…' : 'Save changes' }}
-          </button>
-        </div>
-      </header>
+    <form (submit)="onSubmit($event)">
+      <ui-page>
+        <ui-page-header>
+          <ui-page-header-heading
+            [title]="pageTitle()"
+            description="Profile, account, notification and billing form patterns."
+          />
+        </ui-page-header>
 
-      <div ui-card>
-        <div ui-card-header class="pb-3">
-          <h3 ui-card-title class="text-base">Profile</h3>
-          <p ui-card-description>Public information shown alongside your activity.</p>
-        </div>
-        <div ui-card-content class="grid gap-4 sm:grid-cols-2">
-          <div class="grid gap-2">
-            <ui-label for="name">Full name</ui-label>
-            <ui-input
-              id="name"
-              [ngModel]="profile().name"
-              (ngModelChange)="patchProfile('name', $event)"
-              name="name"
-              placeholder="Jane Doe"
-            />
-          </div>
-          <div class="grid gap-2">
-            <ui-label for="email">Work email</ui-label>
-            <ui-input
-              id="email"
-              [ngModel]="profile().email"
-              (ngModelChange)="patchProfile('email', $event)"
-              name="email"
-              type="email"
-              placeholder="you@company.com"
-            />
-          </div>
-          <div class="grid gap-2 sm:col-span-2">
-            <ui-label for="bio">Short bio</ui-label>
-            <ui-textarea
-              id="bio"
-              [ngModel]="profile().bio"
-              (ngModelChange)="patchProfile('bio', $event)"
-              name="bio"
-              [rows]="3"
-              [maxlength]="280"
-              placeholder="Tell people what you work on…"
-            />
-            <p class="text-muted-foreground text-xs tabular-nums">{{ profile().bio.length }} / 280</p>
-          </div>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header class="pb-3">
-          <h3 ui-card-title class="text-base">Account</h3>
-          <p ui-card-description>Security and visibility settings.</p>
-        </div>
-        <div ui-card-content class="grid gap-4 sm:grid-cols-2">
-          <div class="grid gap-2">
-            <ui-label for="password">New password</ui-label>
-            <ui-input
-              id="password"
-              [ngModel]="account().password"
-              (ngModelChange)="patchAccount('password', $event)"
-              name="password"
-              type="password"
-              placeholder="Leave blank to keep current"
-            />
-          </div>
-          <div class="grid gap-2">
-            <ui-label for="tz">Timezone</ui-label>
-            <ui-select [value]="account().timezone" (valueChange)="patchAccount('timezone', $event)">
-              <ui-select-trigger id="tz">
-                <ui-select-value placeholder="Pick a timezone" />
-              </ui-select-trigger>
-              <ui-select-content>
-                <ui-select-item value="utc">UTC · Coordinated Universal Time</ui-select-item>
-                <ui-select-item value="pst">PST · Pacific (UTC−8)</ui-select-item>
-                <ui-select-item value="est">EST · Eastern (UTC−5)</ui-select-item>
-                <ui-select-item value="cet">CET · Central European (UTC+1)</ui-select-item>
-                <ui-select-item value="jst">JST · Japan (UTC+9)</ui-select-item>
-              </ui-select-content>
-            </ui-select>
-          </div>
-          <div class="grid gap-2 sm:col-span-2">
-            <ui-label for="language" class="inline-flex items-center gap-1.5">
-              <lucide-icon [img]="Languages" class="size-3.5" />Language
-            </ui-label>
-            <ui-select [value]="locale()" (valueChange)="onLocaleChange($event)">
-              <ui-select-trigger id="language" class="w-full">
-                <ui-select-value />
-              </ui-select-trigger>
-              <ui-select-content>
-                @for (opt of languageOptions(); track opt.code) {
-                  <ui-select-item [value]="opt.code">{{ opt.label }}</ui-select-item>
-                }
-              </ui-select-content>
-            </ui-select>
-            <p class="text-muted-foreground text-xs">
-              Switches the UI immediately and is saved in your i18n cookie — no need to hit Save.
-            </p>
-          </div>
-          <div class="space-y-2 sm:col-span-2">
-            <ui-label>Profile visibility</ui-label>
-            <ui-radio-group [value]="account().visibility" (valueChange)="patchAccount('visibility', $any($event))" class="sm:grid-cols-3">
-              <label
-                class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
-              >
-                <ui-radio-group-item value="private" class="mt-0.5" />
-                <div class="flex-1 space-y-0.5">
-                  <div class="text-sm font-medium leading-none">Private</div>
-                  <div class="text-muted-foreground text-xs">Only you can see this profile.</div>
-                </div>
-              </label>
-              <label
-                class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
-              >
-                <ui-radio-group-item value="team" class="mt-0.5" />
-                <div class="flex-1 space-y-0.5">
-                  <div class="text-sm font-medium leading-none">Team</div>
-                  <div class="text-muted-foreground text-xs">Anyone in your workspace.</div>
-                </div>
-              </label>
-              <label
-                class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
-              >
-                <ui-radio-group-item value="public" class="mt-0.5" />
-                <div class="flex-1 space-y-0.5">
-                  <div class="text-sm font-medium leading-none">Public</div>
-                  <div class="text-muted-foreground text-xs">Anyone with the link.</div>
-                </div>
-              </label>
-            </ui-radio-group>
-          </div>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header class="pb-3">
-          <h3 ui-card-title class="text-base">Notifications</h3>
-          <p ui-card-description>Pick the channels and topics you want to hear about.</p>
-        </div>
-        <div ui-card-content class="space-y-4">
-          <div class="flex items-center justify-between gap-4">
-            <div class="space-y-0.5">
-              <ui-label for="notify-email" class="inline-flex items-center gap-1.5">
-                <lucide-icon [img]="Bell" class="size-3.5" />Email notifications
-              </ui-label>
-              <p class="text-muted-foreground text-xs">Daily digest of activity in your workspace.</p>
+        <ui-page-body class="max-w-3xl space-y-4">
+          <div ui-card>
+            <div ui-card-header>
+              <h3 ui-card-title class="text-base">Profile</h3>
+              <p ui-card-description>Public information shown alongside your activity.</p>
             </div>
-            <ui-switch
-              id="notify-email"
-              [ngModel]="notifications().email"
-              (ngModelChange)="patchNotifications('email', $event)"
-              name="notify-email"
-            />
-          </div>
-          <ui-separator />
-          <div class="flex items-center justify-between gap-4">
-            <div class="space-y-0.5">
-              <ui-label for="notify-push">Push notifications</ui-label>
-              <p class="text-muted-foreground text-xs">Real-time on mobile when something needs your attention.</p>
-            </div>
-            <ui-switch
-              id="notify-push"
-              [ngModel]="notifications().push"
-              (ngModelChange)="patchNotifications('push', $event)"
-              name="notify-push"
-            />
-          </div>
-          <ui-separator />
-          <div class="space-y-2">
-            <ui-label>Weekly digest topics</ui-label>
-            <div class="grid gap-2 sm:grid-cols-2">
-              @for (opt of notificationOptions; track opt.value) {
-                <label
-                  class="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2.5 rounded-md border p-2.5 text-sm transition-colors"
-                >
-                  <ui-checkbox
-                    [checked]="notifications().weekly.includes(opt.value)"
-                    (checkedChange)="toggleNotification(opt.value, $event === true)"
-                  />
-                  {{ opt.label }}
-                </label>
-              }
+            <div ui-card-content class="grid gap-4 sm:grid-cols-2">
+              <div class="grid gap-2">
+                <ui-label for="name">Full name</ui-label>
+                <ui-input
+                  id="name"
+                  [ngModel]="profile().name"
+                  (ngModelChange)="patchProfile('name', $event)"
+                  name="name"
+                  placeholder="Jane Doe"
+                />
+              </div>
+              <div class="grid gap-2">
+                <ui-label for="email">Work email</ui-label>
+                <ui-input
+                  id="email"
+                  [ngModel]="profile().email"
+                  (ngModelChange)="patchProfile('email', $event)"
+                  name="email"
+                  type="email"
+                  placeholder="you@company.com"
+                />
+              </div>
+              <div class="grid gap-2 sm:col-span-2">
+                <ui-label for="bio">Short bio</ui-label>
+                <ui-textarea
+                  id="bio"
+                  [ngModel]="profile().bio"
+                  (ngModelChange)="patchProfile('bio', $event)"
+                  name="bio"
+                  [rows]="3"
+                  [maxlength]="280"
+                  placeholder="Tell people what you work on…"
+                />
+                <p class="text-muted-foreground text-xs tabular-nums">{{ profile().bio.length }} / 280</p>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div ui-card>
-        <div ui-card-header class="pb-3">
-          <h3 ui-card-title class="text-base">Billing</h3>
-          <p ui-card-description>Seats and plan size. Charged monthly at &#36;12/seat.</p>
-        </div>
-        <div ui-card-content class="space-y-4">
-          <div class="space-y-2">
-            <div class="flex items-baseline justify-between">
-              <ui-label for="billing-seats">Team seats</ui-label>
-              <!-- WHY (Rule15/28): billing math formats through the shared
-                   helper and the /mo unit sits muted so the figure scans. -->
-              <span class="text-sm tabular-nums">
-                {{ billing().seats }} seats · {{ formatMoney(billing().seats * 12) }}<span class="text-muted-foreground">/mo</span>
+          <div ui-card>
+            <div ui-card-header>
+              <h3 ui-card-title class="text-base">Account</h3>
+              <p ui-card-description>Security and visibility settings.</p>
+            </div>
+            <div ui-card-content class="grid gap-4 sm:grid-cols-2">
+              <div class="grid gap-2">
+                <ui-label for="password">New password</ui-label>
+                <ui-input
+                  id="password"
+                  [ngModel]="account().password"
+                  (ngModelChange)="patchAccount('password', $event)"
+                  name="password"
+                  type="password"
+                  placeholder="Leave blank to keep current"
+                  showPasswordToggle
+                />
+              </div>
+              <div class="grid gap-2">
+                <ui-label for="tz">Timezone</ui-label>
+                <ui-select [value]="account().timezone" (valueChange)="patchAccount('timezone', $event)">
+                  <ui-select-trigger id="tz">
+                    <ui-select-value placeholder="Pick a timezone" />
+                  </ui-select-trigger>
+                  <ui-select-content>
+                    <ui-select-item value="utc">UTC · Coordinated Universal Time</ui-select-item>
+                    <ui-select-item value="pst">PST · Pacific (UTC−8)</ui-select-item>
+                    <ui-select-item value="est">EST · Eastern (UTC−5)</ui-select-item>
+                    <ui-select-item value="cet">CET · Central European (UTC+1)</ui-select-item>
+                    <ui-select-item value="jst">JST · Japan (UTC+9)</ui-select-item>
+                  </ui-select-content>
+                </ui-select>
+              </div>
+              <div class="grid gap-2 sm:col-span-2">
+                <ui-label for="language">Language</ui-label>
+                <ui-select [value]="locale()" (valueChange)="onLocaleChange($event)">
+                  <ui-select-trigger id="language" class="w-full">
+                    <ui-select-value />
+                  </ui-select-trigger>
+                  <ui-select-content>
+                    @for (opt of languageOptions(); track opt.code) {
+                      <ui-select-item [value]="opt.code">{{ opt.label }}</ui-select-item>
+                    }
+                  </ui-select-content>
+                </ui-select>
+                <p class="text-muted-foreground text-xs">Applies right away — no need to save.</p>
+              </div>
+              <div class="space-y-2 sm:col-span-2">
+                <ui-label>Profile visibility</ui-label>
+                <ui-radio-group [value]="account().visibility" (valueChange)="patchAccount('visibility', $any($event))" class="sm:grid-cols-3">
+                  <label
+                    class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
+                  >
+                    <ui-radio-group-item value="private" class="mt-0.5" />
+                    <div class="flex-1 space-y-0.5">
+                      <div class="text-sm font-medium leading-none">Private</div>
+                      <div class="text-muted-foreground text-xs">Only you can see this profile.</div>
+                    </div>
+                  </label>
+                  <label
+                    class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
+                  >
+                    <ui-radio-group-item value="team" class="mt-0.5" />
+                    <div class="flex-1 space-y-0.5">
+                      <div class="text-sm font-medium leading-none">Team</div>
+                      <div class="text-muted-foreground text-xs">Anyone in your workspace.</div>
+                    </div>
+                  </label>
+                  <label
+                    class="hover:bg-muted/50 has-[[data-state=checked]]:border-primary flex w-full cursor-pointer items-start gap-3 rounded-md border p-3 transition-colors"
+                  >
+                    <ui-radio-group-item value="public" class="mt-0.5" />
+                    <div class="flex-1 space-y-0.5">
+                      <div class="text-sm font-medium leading-none">Public</div>
+                      <div class="text-muted-foreground text-xs">Anyone with the link.</div>
+                    </div>
+                  </label>
+                </ui-radio-group>
+              </div>
+            </div>
+          </div>
+
+          <div ui-card>
+            <div ui-card-header>
+              <h3 ui-card-title class="text-base">Notifications</h3>
+              <p ui-card-description>Pick the channels and topics you want to hear about.</p>
+            </div>
+            <div ui-card-content class="space-y-4">
+              <div class="flex items-center justify-between gap-4">
+                <div class="space-y-0.5">
+                  <ui-label for="notify-email">Email notifications</ui-label>
+                  <p class="text-muted-foreground text-xs">Daily digest of activity in your workspace.</p>
+                </div>
+                <ui-switch
+                  id="notify-email"
+                  [ngModel]="notifications().email"
+                  (ngModelChange)="patchNotifications('email', $event)"
+                  name="notify-email"
+                />
+              </div>
+              <ui-separator />
+              <div class="flex items-center justify-between gap-4">
+                <div class="space-y-0.5">
+                  <ui-label for="notify-push">Push notifications</ui-label>
+                  <p class="text-muted-foreground text-xs">Real-time on mobile when something needs your attention.</p>
+                </div>
+                <ui-switch
+                  id="notify-push"
+                  [ngModel]="notifications().push"
+                  (ngModelChange)="patchNotifications('push', $event)"
+                  name="notify-push"
+                />
+              </div>
+              <ui-separator />
+              <div class="space-y-2">
+                <ui-label>Weekly digest topics</ui-label>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  @for (opt of notificationOptions; track opt.value) {
+                    <label
+                      class="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-2 rounded-md border p-3 text-sm transition-colors"
+                    >
+                      <ui-checkbox
+                        [checked]="notifications().weekly.includes(opt.value)"
+                        (checkedChange)="toggleNotification(opt.value, $event === true)"
+                      />
+                      {{ opt.label }}
+                    </label>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div ui-card>
+            <div ui-card-header>
+              <h3 ui-card-title class="text-base">Billing</h3>
+              <p ui-card-description>Seats and plan size. Charged monthly at &#36;12/seat.</p>
+            </div>
+            <div ui-card-content class="space-y-4">
+              <div class="space-y-2">
+                <div class="flex items-baseline justify-between">
+                  <ui-label for="billing-seats">Team seats</ui-label>
+                  <!-- WHY (Rule15/28): billing math formats through the shared
+                       helper and the /mo unit sits muted so the figure scans. -->
+                  <span class="text-sm tabular-nums">
+                    {{ billing().seats }} seats · {{ formatMoney(billing().seats * 12) }}<span class="text-muted-foreground">/mo</span>
+                  </span>
+                </div>
+                <ui-slider
+                  id="billing-seats"
+                  [value]="billing().seats"
+                  (valueChange)="onSeats($event)"
+                  [min]="1"
+                  [max]="50"
+                  [step]="1"
+                  aria-label="Team seats"
+                />
+                <div class="text-muted-foreground flex justify-between text-xs tabular-nums">
+                  <span>1</span>
+                  <span>50</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2">
+            @if (savedAt()) {
+              <span class="text-muted-foreground inline-flex items-center gap-1.5 text-xs" role="status">
+                <lucide-icon [img]="Check" class="text-success size-3.5" aria-hidden="true" />Saved at {{ savedAt() }}
               </span>
-            </div>
-            <ui-slider
-              id="billing-seats"
-              [value]="billing().seats"
-              (valueChange)="onSeats($event)"
-              [min]="1"
-              [max]="50"
-              [step]="1"
-              aria-label="Team seats"
-            />
-            <div class="text-muted-foreground flex justify-between text-xs tabular-nums">
-              <span>1</span>
-              <span>50</span>
-            </div>
+            }
+            <button ui-button type="submit" [disabled]="submitting()">
+              @if (submitting()) {
+                <lucide-icon [img]="LoaderCircle" class="size-4 animate-spin" aria-hidden="true" />
+              }
+              {{ submitting() ? 'Saving…' : 'Save changes' }}
+            </button>
           </div>
-        </div>
-      </div>
+        </ui-page-body>
+      </ui-page>
     </form>
   `,
 })
 export class DashboardFormsComponent {
-  protected readonly Bell = Bell
   protected readonly Check = Check
-  protected readonly Languages = Languages
   protected readonly LoaderCircle = LoaderCircle
 
+  readonly pageTitle = injectPageTitle()
   readonly notificationOptions = NOTIFICATION_OPTIONS
 
   readonly profile = signal({ name: 'Alex Morgan', email: 'alex@acme.example', bio: 'Eng lead. Owns the platform team. Coffee → code → repeat.' })
@@ -335,10 +343,6 @@ export class DashboardFormsComponent {
       label: code === 'es' ? 'Español' : 'English',
     })),
   )
-
-  constructor(title: Title) {
-    title.setTitle('Forms')
-  }
 
   patchProfile(key: 'name' | 'email' | 'bio', value: string): void {
     this.profile.update((p) => ({ ...p, [key]: value }))

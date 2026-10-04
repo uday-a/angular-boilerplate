@@ -44,9 +44,12 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "catalog:sync": "node scripts/ui-catalog.ts sync-registry",
+    "catalog:scan": "node scripts/ui-catalog.ts scan-usage"
   },
   "dependencies": {
     "@angular/common": "^20.3.33",

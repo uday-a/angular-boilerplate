@@ -1,111 +1,58 @@
-// Every primitive demonstrated in realistic contexts. Ports
-// nuxt-boilerplate's app/pages/dashboard/ui-kit.vue.
+// UI Kit finder. Ports nuxt-boilerplate's app/pages/dashboard/ui-kit.vue +
+// components/ui-kit/{FoundationsPanel,FinderToolbar,CatalogCard,InstallCommand}.vue
+// and composables/useUiCatalog.ts: foundations reference, search by name or
+// use case, category/status filters synced to the URL (?q=&cat=&status=),
+// a result count and one card per component with where the app uses it and
+// its install command.
 //
-// DIVERGENCES:
-// - KpiGrid (Angular) is a bare grid wrapper with no `items` prop, so the KPI
-//   tiles are spelled out inline as cards.
-// - RichTextEditor is stubbed: it needs @tiptap/* which this repo has not
-//   installed. The section renders a placeholder noting the follow-up.
-import { ChangeDetectionStrategy, Component, PLATFORM_ID, inject, signal } from '@angular/core'
+// The catalog lists what this repo ships (src/app/components/ui + blocks)
+// plus the rest of the Angular registry as "Available". Data comes from
+// src/app/core/ui-catalog (regenerate with `npm run catalog:scan`).
+// Each installed primitive's card mounts a live demo via @defer (on viewport).
+import { ChangeDetectionStrategy, Component, PLATFORM_ID, afterNextRender, computed, inject, signal } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
-import { FormsModule } from '@angular/forms'
-import { Title } from '@angular/platform-browser'
-import { RouterLink } from '@angular/router'
+import { toSignal } from '@angular/core/rxjs-interop'
+import { ActivatedRoute, Router, RouterLink } from '@angular/router'
+import { TranslatePipe } from '@ngx-translate/core'
+import { Check, ChevronDown, Copy, ExternalLink, LucideAngularModule, Search, SearchX, Star } from 'lucide-angular'
+import { I18nService, injectPageTitle } from '@/app/core/i18n'
+import { routeLabel } from '@/app/core/dashboard/breadcrumb-labels'
 import {
-  Bold,
-  CircleAlert,
-  Copy,
-  CreditCard,
-  Hash,
-  House,
-  Image as ImageIcon,
-  Italic,
-  Link as LinkIcon,
-  List,
-  ListOrdered,
-  LucideAngularModule,
-  Mail,
-  Palette,
-  ScanFace,
-  Search,
-  Settings,
-  Underline,
-  User,
-  X,
-} from 'lucide-angular'
-import { UiAvatarComponent, UiAvatarFallbackComponent } from '@/app/components/ui/avatar/avatar.component'
+  buildCatalog,
+  CATALOG_CATEGORIES,
+  CATALOG_STATUSES,
+  searchCatalog,
+  type CatalogCategory,
+  type CatalogEntry,
+  type CatalogStatus,
+  type SnapshotItem,
+} from '@/app/core/ui-catalog/catalog'
+import { CURATED, CURATED_BLOCKS } from '@/app/core/ui-catalog/curated'
+import snapshot from '@/app/core/ui-catalog/registry.snapshot.json'
+import usage from '@/app/core/ui-catalog/usage.generated.json'
 import { UiBadgeComponent } from '@/app/components/ui/badge/badge.component'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
 import {
+  UiCardActionComponent,
   UiCardComponent,
   UiCardContentComponent,
   UiCardDescriptionComponent,
+  UiCardFooterComponent,
   UiCardHeaderComponent,
-  UiCardTitleComponent,
 } from '@/app/components/ui/card/card.component'
-import { UiCheckboxComponent } from '@/app/components/ui/checkbox/checkbox.component'
-import { UiInputComponent } from '@/app/components/ui/input/input.component'
-import { UiLabelComponent } from '@/app/components/ui/label/label.component'
-import { UiProgressComponent } from '@/app/components/ui/progress/progress.component'
-import { UiSeparatorComponent } from '@/app/components/ui/separator/separator.component'
-import { UiSkeletonComponent } from '@/app/components/ui/skeleton/skeleton.component'
-import { UiSliderComponent } from '@/app/components/ui/slider/slider.component'
-import { UiSwitchComponent } from '@/app/components/ui/switch/switch.component'
-import { UiTextareaComponent } from '@/app/components/ui/textarea/textarea.component'
-import {
-  UiBreadcrumbComponent,
-  UiBreadcrumbItemComponent,
-  UiBreadcrumbLinkComponent,
-  UiBreadcrumbListComponent,
-  UiBreadcrumbPageComponent,
-  UiBreadcrumbSeparatorComponent,
-} from '@/app/components/ui/breadcrumb/breadcrumb.component'
-import {
-  UiAccordionComponent,
-  UiAccordionContentComponent,
-  UiAccordionItemComponent,
-  UiAccordionTriggerComponent,
-} from '@/app/components/ui/accordion/accordion.component'
 import {
   UiCollapsibleComponent,
   UiCollapsibleContentComponent,
   UiCollapsibleTriggerComponent,
 } from '@/app/components/ui/collapsible/collapsible.component'
+import { UiEmptyStateComponent } from '@/app/components/ui/empty-state/empty-state.component'
+import { UiInputComponent } from '@/app/components/ui/input/input.component'
 import {
-  UiDialogComponent,
-  UiDialogContentComponent,
-  UiDialogDescriptionComponent,
-  UiDialogFooterComponent,
-  UiDialogHeaderComponent,
-  UiDialogTitleComponent,
-  UiDialogTriggerComponent,
-} from '@/app/components/ui/dialog/dialog.component'
-import {
-  UiSheetComponent,
-  UiSheetContentComponent,
-  UiSheetDescriptionComponent,
-  UiSheetHeaderComponent,
-  UiSheetTitleComponent,
-  UiSheetTriggerComponent,
-} from '@/app/components/ui/sheet/sheet.component'
-import {
-  UiPopoverComponent,
-  UiPopoverContentComponent,
-  UiPopoverTriggerComponent,
-} from '@/app/components/ui/popover/popover.component'
-import {
-  UiTooltipComponent,
-  UiTooltipContentComponent,
-  UiTooltipProviderComponent,
-  UiTooltipTriggerComponent,
-} from '@/app/components/ui/tooltip/tooltip.component'
-import {
-  UiDropdownMenuComponent,
-  UiDropdownMenuContentComponent,
-  UiDropdownMenuItemComponent,
-  UiDropdownMenuSeparatorComponent,
-  UiDropdownMenuTriggerComponent,
-} from '@/app/components/ui/dropdown-menu/dropdown-menu.component'
+  UiPageBodyComponent,
+  UiPageComponent,
+  UiPageHeaderComponent,
+  UiPageHeaderHeadingComponent,
+} from '@/app/components/ui/page/page.component'
 import {
   UiSelectComponent,
   UiSelectContentComponent,
@@ -113,42 +60,107 @@ import {
   UiSelectTriggerComponent,
   UiSelectValueComponent,
 } from '@/app/components/ui/select/select.component'
-import { UiToggleComponent } from '@/app/components/ui/toggle/toggle.component'
-import {
-  UiToggleGroupComponent,
-  UiToggleGroupItemComponent,
-} from '@/app/components/ui/toggle-group/toggle-group.component'
-import {
-  UiRadioGroupComponent,
-  UiRadioGroupItemComponent,
-} from '@/app/components/ui/radio-group/radio-group.component'
-import {
-  UiPinInputComponent,
-  UiPinInputGroupComponent,
-  UiPinInputSeparatorComponent,
-  UiPinInputSlotComponent,
-} from '@/app/components/ui/pin-input/pin-input.component'
-import { UiKpiGridComponent } from '@/app/components/ui/kpi-grid/kpi-grid.component'
-import { UiStatTileComponent } from '@/app/components/blocks/stat-tile/stat-tile.component'
-import { UiDataListComponent, UiDataListItemComponent } from '@/app/components/ui/data-list/data-list.component'
-import { UiSectionCardComponent } from '@/app/components/ui/section-card/section-card.component'
-import { UiIconBoxComponent } from '@/app/components/ui/icon-box/icon-box.component'
-import {
-  UiCommandComponent,
-  UiCommandEmptyComponent,
-  UiCommandGroupComponent,
-  UiCommandInputComponent,
-  UiCommandItemComponent,
-  UiCommandListComponent,
-} from '@/app/components/ui/command/command.component'
-import { UiThemeSwitchComponent } from '@/app/components/ui/theme-switch/theme-switch.component'
-import { UiOverlayScrollComponent } from '@/app/components/ui/overlay-scroll/overlay-scroll.component'
+import { UiToggleGroupComponent, UiToggleGroupItemComponent } from '@/app/components/ui/toggle-group/toggle-group.component'
+import { UiSkeletonComponent } from '@/app/components/ui/skeleton/skeleton.component'
+import { UiKitDemoComponent } from './ui-kit-demos'
+import { UiKitChartsDemoComponent } from './ui-kit-demo-charts'
+import { UiKitMapDemoComponent } from './ui-kit-demo-map'
 
-const KPI_ITEMS = [
-  { label: 'Total Revenue', value: '$84,230', change: '+12.5%' },
-  { label: 'Active Users', value: '2,420', change: '+8.2%' },
-  { label: 'Conversion Rate', value: '3.24%', change: '-0.4%' },
-  { label: 'Avg. Order Value', value: '$64.50', change: '+2.1%' },
+const ENTRIES = buildCatalog({
+  snapshot: snapshot.items as SnapshotItem[],
+  curated: CURATED,
+  curatedBlocks: CURATED_BLOCKS,
+  usage,
+})
+
+/** i18n key suffix for a category: 'data-display' -> 'dataDisplay'. */
+const categoryKey = (c: CatalogCategory | 'all') => c.replace(/-(\w)/g, (_, ch: string) => ch.toUpperCase())
+
+const STATUS_VARIANT = { 'installed': 'success', 'demo-only': 'warning', 'available': 'outline' } as const
+const STATUS_KEY = { 'installed': 'installed', 'demo-only': 'demoOnly', 'available': 'available' } as const
+const USED_IN_LIMIT = 8
+
+/** Installed primitives with a live demo (ui-kit-demos*.ts). Kept here, not in
+ * the demo files, so importing it doesn't pull the deferred chunks in eagerly. */
+const DEMO_NAMES = new Set([
+  'accordion', 'avatar', 'badge', 'breadcrumb', 'button', 'calendar', 'card', 'charts', 'checkbox', 'collapsible',
+  'command', 'context-menu', 'data-list', 'dialog', 'dropdown-menu', 'empty-state', 'file-upload', 'form', 'icon-box',
+  'input', 'kpi-grid', 'label', 'leaflet-map', 'overlay-scroll', 'page', 'pin-input', 'popover', 'progress',
+  'radio-group', 'range-calendar', 'section-card', 'select', 'separator', 'sheet', 'sidebar', 'skeleton', 'slider',
+  'sonner', 'switch', 'table', 'tabs', 'textarea', 'theme-switch', 'toggle', 'toggle-group', 'tooltip', 'tour',
+])
+
+interface UsedInLink {
+  label: string
+  /** Absent for layouts, the app shell and dynamic routes. */
+  to?: string
+}
+
+// Rendered from the design rules. Swatch classes resolve to the theme's CSS
+// variables, so they follow light/dark live.
+const COLOR_GROUPS = [
+  {
+    key: 'neutrals',
+    swatches: [
+      { token: 'background', class: 'bg-background' },
+      { token: 'card', class: 'bg-card' },
+      { token: 'muted', class: 'bg-muted' },
+      { token: 'accent', class: 'bg-accent' },
+      { token: 'border', class: 'bg-border' },
+      { token: 'muted-foreground', class: 'bg-muted-foreground' },
+      { token: 'foreground', class: 'bg-foreground' },
+    ],
+  },
+  {
+    key: 'primary',
+    swatches: [
+      { token: 'primary', class: 'bg-primary' },
+      { token: 'primary-foreground', class: 'bg-primary-foreground' },
+      { token: 'ring', class: 'bg-ring' },
+    ],
+  },
+  {
+    key: 'status',
+    swatches: [
+      { token: 'success', class: 'bg-success' },
+      { token: 'warning', class: 'bg-warning' },
+      { token: 'info', class: 'bg-info' },
+      { token: 'destructive', class: 'bg-destructive' },
+    ],
+  },
+  {
+    key: 'chart',
+    swatches: [
+      { token: 'chart-1', class: 'bg-chart-1' },
+      { token: 'chart-2', class: 'bg-chart-2' },
+      { token: 'chart-3', class: 'bg-chart-3' },
+      { token: 'chart-4', class: 'bg-chart-4' },
+      { token: 'chart-5', class: 'bg-chart-5' },
+    ],
+  },
+]
+
+const TYPE_ROLES = [
+  { key: 'h1', classes: 'text-2xl font-semibold tracking-tight', sample: 'Projects' },
+  { key: 'cardTitle', classes: 'text-base font-semibold', sample: 'Monthly revenue' },
+  { key: 'body', classes: 'text-sm', sample: 'Invoices are sent on the 1st.' },
+  { key: 'meta', classes: 'text-xs text-muted-foreground', sample: 'Updated 2 min ago' },
+  { key: 'eyebrow', classes: 'text-xs font-medium uppercase tracking-wider text-muted-foreground', sample: 'Active users' },
+  { key: 'metric', classes: 'text-2xl font-semibold tracking-tight tabular-nums', sample: '$84,230' },
+]
+
+const GAPS = [
+  { key: 'inline', token: 'gap-1.5 / gap-2', bar: 'w-2' },
+  { key: 'field', token: 'gap-2', bar: 'w-2' },
+  { key: 'card', token: 'gap-4 / space-y-4', bar: 'w-4' },
+  { key: 'section', token: 'gap-4 / space-y-4', bar: 'w-6' },
+]
+
+const ICON_SIZES = [
+  { key: 'xs', token: 'size-3.5' },
+  { key: 'sm', token: 'size-4' },
+  { key: 'box', token: 'size-5' },
+  { key: 'empty', token: 'size-10' },
 ]
 
 @Component({
@@ -156,641 +168,463 @@ const KPI_ITEMS = [
   selector: 'app-dashboard-ui-kit',
   standalone: true,
   imports: [
-    FormsModule,
-    LucideAngularModule,
     RouterLink,
-    UiAccordionComponent,
-    UiAccordionContentComponent,
-    UiAccordionItemComponent,
-    UiAccordionTriggerComponent,
-    UiAvatarComponent,
-    UiAvatarFallbackComponent,
+    TranslatePipe,
+    LucideAngularModule,
     UiBadgeComponent,
     UiButtonComponent,
+    UiCardActionComponent,
     UiCardComponent,
     UiCardContentComponent,
     UiCardDescriptionComponent,
+    UiCardFooterComponent,
     UiCardHeaderComponent,
-    UiCardTitleComponent,
-    UiCheckboxComponent,
     UiCollapsibleComponent,
     UiCollapsibleContentComponent,
     UiCollapsibleTriggerComponent,
-    UiCommandComponent,
-    UiCommandEmptyComponent,
-    UiCommandGroupComponent,
-    UiCommandInputComponent,
-    UiCommandItemComponent,
-    UiCommandListComponent,
-    UiDataListComponent,
-    UiDataListItemComponent,
-    UiDialogComponent,
-    UiDialogContentComponent,
-    UiDialogDescriptionComponent,
-    UiDialogFooterComponent,
-    UiDialogHeaderComponent,
-    UiDialogTitleComponent,
-    UiDialogTriggerComponent,
-    UiDropdownMenuComponent,
-    UiDropdownMenuContentComponent,
-    UiDropdownMenuItemComponent,
-    UiDropdownMenuSeparatorComponent,
-    UiDropdownMenuTriggerComponent,
-    UiIconBoxComponent,
+    UiEmptyStateComponent,
     UiInputComponent,
-    UiKpiGridComponent,
-    UiStatTileComponent,
-    UiLabelComponent,
-    UiOverlayScrollComponent,
-    UiPinInputComponent,
-    UiPinInputGroupComponent,
-    UiPinInputSeparatorComponent,
-    UiPinInputSlotComponent,
-    UiPopoverComponent,
-    UiPopoverContentComponent,
-    UiPopoverTriggerComponent,
-    UiProgressComponent,
-    UiRadioGroupComponent,
-    UiRadioGroupItemComponent,
-    UiSectionCardComponent,
+    UiPageBodyComponent,
+    UiPageComponent,
+    UiPageHeaderComponent,
+    UiPageHeaderHeadingComponent,
     UiSelectComponent,
     UiSelectContentComponent,
     UiSelectItemComponent,
     UiSelectTriggerComponent,
     UiSelectValueComponent,
-    UiSeparatorComponent,
-    UiSheetComponent,
-    UiSheetContentComponent,
-    UiSheetDescriptionComponent,
-    UiSheetHeaderComponent,
-    UiSheetTitleComponent,
-    UiSheetTriggerComponent,
-    UiSkeletonComponent,
-    UiSliderComponent,
-    UiSwitchComponent,
-    UiTextareaComponent,
-    UiThemeSwitchComponent,
-    UiToggleComponent,
     UiToggleGroupComponent,
     UiToggleGroupItemComponent,
-    UiTooltipComponent,
-    UiTooltipContentComponent,
-    UiTooltipProviderComponent,
-    UiTooltipTriggerComponent,
-    UiBreadcrumbComponent,
-    UiBreadcrumbItemComponent,
-    UiBreadcrumbLinkComponent,
-    UiBreadcrumbListComponent,
-    UiBreadcrumbPageComponent,
-    UiBreadcrumbSeparatorComponent,
+    UiSkeletonComponent,
+    UiKitDemoComponent,
+    UiKitChartsDemoComponent,
+    UiKitMapDemoComponent,
   ],
   template: `
-    <div class="space-y-4">
-      <header class="space-y-1">
-        <h1 class="text-2xl font-semibold tracking-tight">UI Kit</h1>
-        <p class="text-muted-foreground text-sm">Every primitive demonstrated in realistic contexts.</p>
-      </header>
+    <ui-page>
+      <ui-page-header>
+        <ui-page-header-heading [title]="pageTitle()" [description]="'uiKit.description' | translate" />
+      </ui-page-header>
 
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">Breadcrumb</h3>
-          <p ui-card-description>Navigation hierarchy with links and current page.</p>
-        </div>
-        <div ui-card-content>
-          <ui-breadcrumb>
-            <ui-breadcrumb-list>
-              <ui-breadcrumb-item>
-                <a ui-breadcrumb-link [routerLink]="'/dashboard'">
-                  <lucide-icon [img]="House" class="size-3.5" />
-                </a>
-              </ui-breadcrumb-item>
-              <ui-breadcrumb-separator />
-              <ui-breadcrumb-item>
-                <a ui-breadcrumb-link [routerLink]="'/settings'">Settings</a>
-              </ui-breadcrumb-item>
-              <ui-breadcrumb-separator />
-              <ui-breadcrumb-item><ui-breadcrumb-page>UI Kit</ui-breadcrumb-page></ui-breadcrumb-item>
-            </ui-breadcrumb-list>
-          </ui-breadcrumb>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">KpiGrid</h3>
-          <p ui-card-description>Metric tiles with trend indicators.</p>
-        </div>
-        <div ui-card-content>
-          <ui-kpi-grid>
-            @for (kpi of kpiItems; track kpi.label) {
-              <!-- All four metrics are up-is-good, so the sign picks the tone. -->
-              <ui-stat-tile
-                [label]="kpi.label"
-                [value]="kpi.value"
-                [delta]="kpi.change"
-                [deltaTone]="kpi.change.startsWith('-') ? 'negative' : 'positive'"
-              />
-            }
-          </ui-kpi-grid>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">Command</h3>
-          <p ui-card-description>Keyboard-driven command palette for search and actions.</p>
-        </div>
-        <div ui-card-content>
-          <ui-command class="rounded-lg border shadow-sm">
-            <ui-command-input placeholder="Type a command or search..." />
-            <ui-command-list>
-              <ui-command-empty>No results found.</ui-command-empty>
-              <ui-command-group heading="Suggestions">
-                <ui-command-item value="calendar">
-                  <lucide-icon [img]="Hash" class="mr-2 size-4" />Calendar
-                </ui-command-item>
-                <ui-command-item value="search">
-                  <lucide-icon [img]="Search" class="mr-2 size-4" />Search Emoji
-                </ui-command-item>
-                <ui-command-item value="calculator">
-                  <lucide-icon [img]="CreditCard" class="mr-2 size-4" />Calculator
-                </ui-command-item>
-              </ui-command-group>
-              <ui-command-group heading="Settings">
-                <ui-command-item value="profile">
-                  <lucide-icon [img]="User" class="mr-2 size-4" />Profile
-                </ui-command-item>
-                <ui-command-item value="billing">
-                  <lucide-icon [img]="CreditCard" class="mr-2 size-4" />Billing
-                </ui-command-item>
-                <ui-command-item value="settings">
-                  <lucide-icon [img]="Settings" class="mr-2 size-4" />Settings
-                </ui-command-item>
-              </ui-command-group>
-            </ui-command-list>
-          </ui-command>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Dialog</h3>
-            <p ui-card-description>Modal overlay for critical actions.</p>
-          </div>
-          <div ui-card-content>
-            <ui-dialog [open]="dialogOpen()" (openChange)="dialogOpen.set($event)">
-              <button ui-button ui-dialog-trigger variant="outline" size="sm">Open dialog</button>
-              <ui-dialog-content>
-                <ui-dialog-header>
-                  <ui-dialog-title>Confirm action</ui-dialog-title>
-                  <ui-dialog-description>
-                    This will permanently delete the selected item. This action cannot be undone.
-                  </ui-dialog-description>
-                </ui-dialog-header>
-                <ui-dialog-footer>
-                  <button ui-button variant="outline" size="sm" (click)="dialogOpen.set(false)">Cancel</button>
-                  <button ui-button variant="destructive" size="sm" (click)="dialogOpen.set(false)">Delete</button>
-                </ui-dialog-footer>
-              </ui-dialog-content>
-            </ui-dialog>
-          </div>
-        </div>
-
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Sheet</h3>
-            <p ui-card-description>Slide-in panel for detail views.</p>
-          </div>
-          <div ui-card-content>
-            <ui-sheet [open]="sheetOpen()" (openChange)="sheetOpen.set($event)">
-              <button ui-button ui-sheet-trigger variant="outline" size="sm">Open sheet</button>
-              <ui-sheet-content>
-                <ui-sheet-header>
-                  <ui-sheet-title>Details</ui-sheet-title>
-                  <ui-sheet-description>View and edit item details.</ui-sheet-description>
-                </ui-sheet-header>
-                <div class="space-y-3 py-4">
-                  <div class="space-y-1">
-                    <ui-label>Name</ui-label>
-                    <ui-input value="Acme Inc" />
+      <ui-page-body class="space-y-4">
+        <!-- Foundations: collapsed by default; search is the page's main job. -->
+        <ui-collapsible #foundations="uiCollapsible">
+          <ui-card>
+            <button
+              ui-collapsible-trigger
+              type="button"
+              class="hover:bg-muted/50 focus-visible:ring-ring w-full rounded-[inherit] text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <ui-card-header>
+                <h2 class="text-base leading-none font-semibold tracking-tight">{{ 'uiKit.foundations.title' | translate }}</h2>
+                <ui-card-description>{{ 'uiKit.foundations.description' | translate }}</ui-card-description>
+                <ui-card-action class="self-center">
+                  <lucide-icon
+                    [img]="ChevronDownIcon"
+                    [class]="'text-muted-foreground size-4 shrink-0 transition-transform duration-200' + (foundations.isOpen ? ' rotate-180' : '')"
+                    aria-hidden="true"
+                  />
+                </ui-card-action>
+              </ui-card-header>
+            </button>
+            <ui-collapsible-content>
+              <ui-card-content class="space-y-4 p-4 pt-0">
+                <section class="space-y-2">
+                  <h3 class="text-muted-foreground text-xs font-medium tracking-wider uppercase">{{ 'uiKit.foundations.colour' | translate }}</h3>
+                  <p class="text-muted-foreground max-w-3xl text-xs">{{ 'uiKit.foundations.colourRule' | translate }}</p>
+                  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    @for (group of colorGroups; track group.key) {
+                      <div class="space-y-2">
+                        <p class="text-xs font-medium">{{ 'uiKit.foundations.' + group.key | translate }}</p>
+                        <ul class="flex flex-wrap gap-2">
+                          @for (s of group.swatches; track s.token) {
+                            <li class="flex w-20 flex-col gap-1">
+                              <span [class]="'h-8 w-full rounded-md border ' + s.class" aria-hidden="true"></span>
+                              <code class="text-muted-foreground font-mono text-xs">{{ s.token }}</code>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
                   </div>
-                  <div class="space-y-1">
-                    <ui-label>Email</ui-label>
-                    <ui-input value="hello@acme.com" />
-                  </div>
+                </section>
+
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <section class="space-y-2">
+                    <h3 class="text-muted-foreground text-xs font-medium tracking-wider uppercase">{{ 'uiKit.foundations.type' | translate }}</h3>
+                    <ul class="space-y-2">
+                      @for (role of typeRoles; track role.key) {
+                        <li class="flex items-baseline justify-between gap-2">
+                          <span [class]="'truncate ' + role.classes">{{ role.sample }}</span>
+                          <span class="text-muted-foreground shrink-0 text-xs">{{ 'uiKit.foundations.roles.' + role.key | translate }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                  <section class="space-y-2">
+                    <h3 class="text-muted-foreground text-xs font-medium tracking-wider uppercase">{{ 'uiKit.foundations.spacing' | translate }}</h3>
+                    <ul class="space-y-1.5">
+                      @for (g of gaps; track g.key) {
+                        <li class="flex items-center gap-2 text-xs">
+                          <span [class]="'bg-primary h-3 shrink-0 rounded-sm ' + g.bar" aria-hidden="true"></span>
+                          <code class="font-mono">{{ g.token }}</code>
+                          <span class="text-muted-foreground ml-auto">{{ 'uiKit.foundations.gaps.' + g.key | translate }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
+                  <section class="space-y-2">
+                    <h3 class="text-muted-foreground text-xs font-medium tracking-wider uppercase">{{ 'uiKit.foundations.icons' | translate }}</h3>
+                    <ul class="space-y-1.5">
+                      @for (i of iconSizes; track i.key) {
+                        <li class="flex items-center gap-2 text-xs">
+                          <span class="flex w-10 shrink-0 justify-center">
+                            <lucide-icon [img]="StarIcon" [class]="i.token" aria-hidden="true" />
+                          </span>
+                          <code class="font-mono">{{ i.token }}</code>
+                          <span class="text-muted-foreground ml-auto">{{ 'uiKit.foundations.iconUses.' + i.key | translate }}</span>
+                        </li>
+                      }
+                    </ul>
+                  </section>
                 </div>
-                <button ui-button size="sm" class="w-full" (click)="sheetOpen.set(false)">Save</button>
-              </ui-sheet-content>
-            </ui-sheet>
-          </div>
-        </div>
+              </ui-card-content>
+            </ui-collapsible-content>
+          </ui-card>
+        </ui-collapsible>
 
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Popover + Tooltip</h3>
-            <p ui-card-description>Contextual menus and hover hints.</p>
-          </div>
-          <div ui-card-content class="flex items-center gap-2">
-            <ui-popover>
-              <button ui-button ui-popover-trigger variant="outline" size="sm">Popover</button>
-              <ui-popover-content class="w-56">
-                <p class="text-sm font-medium">Quick actions</p>
-                <p class="text-muted-foreground text-xs mt-1">Choose an action for this item.</p>
-                <ui-separator class="my-2" />
-                <div class="space-y-1">
-                  <button class="flex w-full items-center gap-2 rounded px-2 py-1 text-xs hover:bg-accent">
-                    <lucide-icon [img]="Copy" class="size-3" />Copy
-                  </button>
-                  <button
-                    class="flex w-full items-center gap-2 rounded px-2 py-1 text-xs hover:bg-accent text-destructive"
-                  >
-                    <lucide-icon [img]="X" class="size-3" />Remove
-                  </button>
-                </div>
-              </ui-popover-content>
-            </ui-popover>
-
-            <ui-tooltip-provider>
-              <ui-tooltip>
-                <button ui-button ui-tooltip-trigger variant="ghost" size="icon" class="size-8">
-                  <lucide-icon [img]="CircleAlert" class="size-4" />
-                </button>
-                <ui-tooltip-content><p>More information about this feature</p></ui-tooltip-content>
-              </ui-tooltip>
-            </ui-tooltip-provider>
-
-            <ui-dropdown-menu>
-              <button ui-button ui-dropdown-menu-trigger variant="outline" size="sm">Menu</button>
-              <ui-dropdown-menu-content>
-                <ui-dropdown-menu-item>View</ui-dropdown-menu-item>
-                <ui-dropdown-menu-item>Edit</ui-dropdown-menu-item>
-                <ui-dropdown-menu-separator />
-                <ui-dropdown-menu-item class="text-destructive">Delete</ui-dropdown-menu-item>
-              </ui-dropdown-menu-content>
-            </ui-dropdown-menu>
-          </div>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">Form controls</h3>
-          <p ui-card-description>Inputs, selects, toggles, and validation states.</p>
-        </div>
-        <div ui-card-content class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="space-y-2">
-            <ui-label>Text input</ui-label>
-            <ui-input placeholder="name@example.com" />
-          </div>
-          <div class="space-y-2">
-            <ui-label>Password</ui-label>
-            <ui-input type="password" value="secret123" />
-          </div>
-          <div class="space-y-2">
-            <ui-label>Select</ui-label>
-            <ui-select defaultValue="pro">
-              <ui-select-trigger><ui-select-value /></ui-select-trigger>
-              <ui-select-content>
-                <ui-select-item value="free">Free</ui-select-item>
-                <ui-select-item value="pro">Pro</ui-select-item>
-                <ui-select-item value="enterprise">Enterprise</ui-select-item>
-              </ui-select-content>
-            </ui-select>
-          </div>
-          <div class="space-y-2">
-            <ui-label>Textarea</ui-label>
-            <ui-textarea placeholder="Enter your message..." rows="3" />
-          </div>
-          <div class="space-y-2">
-            <ui-label for="ui-kit-slider">Slider ({{ sliderValue()[0] }}%)</ui-label>
-            <ui-slider
-              id="ui-kit-slider"
-              [value]="sliderValue()"
-              (valueChange)="sliderValue.set($event)"
-              [min]="0"
-              [max]="100"
-              [step]="1"
-              aria-label="Demo slider"
+        <!-- Finder toolbar -->
+        <div class="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div class="relative min-w-0 flex-1">
+            <lucide-icon
+              [img]="SearchIcon"
+              class="text-muted-foreground pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2"
+              aria-hidden="true"
+            />
+            <ui-input
+              type="search"
+              class="pl-9"
+              [placeholder]="'uiKit.toolbar.searchPlaceholder' | translate"
+              [aria-label]="'uiKit.toolbar.searchLabel' | translate"
+              [value]="draft()"
+              (valueChange)="onDraft($event)"
             />
           </div>
-          <div class="space-y-2">
-            <ui-label>Pin Input</ui-label>
-            <ui-pin-input [value]="otpValue()" (valueChange)="otpValue.set($event)" class="flex gap-2">
-              <ui-pin-input-group>
-                <ui-pin-input-slot [index]="0" />
-                <ui-pin-input-slot [index]="1" />
-                <ui-pin-input-slot [index]="2" />
-                <ui-pin-input-separator />
-                <ui-pin-input-slot [index]="3" />
-                <ui-pin-input-slot [index]="4" />
-                <ui-pin-input-slot [index]="5" />
-              </ui-pin-input-group>
-            </ui-pin-input>
-          </div>
-          <div class="space-y-2">
-            <ui-label>Checkbox</ui-label>
-            <div class="flex items-center gap-2">
-              <ui-checkbox id="terms" />
-              <ui-label for="terms" class="text-sm font-normal">Accept terms</ui-label>
-            </div>
-            <div class="flex items-center gap-2">
-              <ui-checkbox id="news" [defaultChecked]="true" />
-              <ui-label for="news" class="text-sm font-normal">Newsletter</ui-label>
-            </div>
-          </div>
-          <div class="space-y-2">
-            <ui-label>Switch</ui-label>
-            <div class="flex items-center justify-between">
-              <ui-label for="ui-kit-switch-notifications" class="text-sm font-normal">Notifications</ui-label>
-              <ui-switch id="ui-kit-switch-notifications" [defaultChecked]="true" />
-            </div>
-            <div class="flex items-center justify-between">
-              <ui-label for="ui-kit-switch-dark-mode" class="text-sm font-normal">Dark mode</ui-label>
-              <ui-switch id="ui-kit-switch-dark-mode" />
-            </div>
-          </div>
-          <div class="space-y-2">
-            <ui-label>Radio group</ui-label>
-            <ui-radio-group defaultValue="comfortable">
-              <div class="flex items-center gap-2">
-                <ui-radio-group-item value="compact" />
-                <ui-label class="text-sm font-normal">Compact</ui-label>
-              </div>
-              <div class="flex items-center gap-2">
-                <ui-radio-group-item value="comfortable" />
-                <ui-label class="text-sm font-normal">Comfortable</ui-label>
-              </div>
-              <div class="flex items-center gap-2">
-                <ui-radio-group-item value="spacious" />
-                <ui-label class="text-sm font-normal">Spacious</ui-label>
-              </div>
-            </ui-radio-group>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Toggle</h3>
-            <p ui-card-description>Binary state button.</p>
-          </div>
-          <div ui-card-content class="flex gap-2">
-            <button ui-toggle><lucide-icon [img]="Bold" class="size-4" /></button>
-            <button ui-toggle><lucide-icon [img]="Italic" class="size-4" /></button>
-            <button ui-toggle><lucide-icon [img]="Underline" class="size-4" /></button>
-          </div>
-        </div>
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">ToggleGroup</h3>
-            <p ui-card-description>Exclusive or multiple selection.</p>
-          </div>
-          <div ui-card-content>
-            <ui-toggle-group type="single" defaultValue="list">
-              <ui-toggle-group-item value="list">
-                <lucide-icon [img]="List" class="size-4" />
-              </ui-toggle-group-item>
-              <ui-toggle-group-item value="ordered">
-                <lucide-icon [img]="ListOrdered" class="size-4" />
-              </ui-toggle-group-item>
-              <ui-toggle-group-item value="link">
-                <lucide-icon [img]="LinkIcon" class="size-4" />
-              </ui-toggle-group-item>
-              <ui-toggle-group-item value="image">
-                <lucide-icon [img]="ImageIcon" class="size-4" />
-              </ui-toggle-group-item>
+          <div class="flex flex-wrap items-center gap-2">
+            <ui-select [value]="category()" (valueChange)="setQuery('cat', $event)">
+              <button ui-select-trigger class="w-full sm:w-48" [attr.aria-label]="'uiKit.toolbar.category' | translate">
+                <ui-select-value />
+              </button>
+              <ui-select-content>
+                <ui-select-item value="all">{{ 'uiKit.category.all' | translate }}</ui-select-item>
+                @for (c of categories; track c) {
+                  <ui-select-item [value]="c">{{ 'uiKit.category.' + categoryKey(c) | translate }}</ui-select-item>
+                }
+              </ui-select-content>
+            </ui-select>
+            <ui-toggle-group
+              type="single"
+              variant="outline"
+              size="sm"
+              [value]="status()"
+              [attr.aria-label]="'uiKit.toolbar.status' | translate"
+              (valueChange)="$event && setQuery('status', $event)"
+            >
+              @for (opt of statusOptions; track opt.value) {
+                <button ui-toggle-group-item [value]="opt.value" class="px-3 text-xs">{{ 'uiKit.status.' + opt.key | translate }}</button>
+              }
             </ui-toggle-group>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Progress</h3>
-            <p ui-card-description>Visual completion indicator.</p>
-          </div>
-          <div ui-card-content class="space-y-4">
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs">
-                <span>Uploading</span><span>78%</span>
-              </div>
-              <ui-progress [value]="78" />
-            </div>
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs">
-                <span>Processing</span><span>42%</span>
-              </div>
-              <ui-progress [value]="42" />
-            </div>
-            <div class="space-y-1">
-              <div class="flex justify-between text-xs">
-                <span>Complete</span><span>100%</span>
-              </div>
-              <ui-progress [value]="100" />
-            </div>
+            <p class="text-muted-foreground text-xs tabular-nums" aria-live="polite">{{ resultsLabel() }}</p>
           </div>
         </div>
 
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Skeleton</h3>
-            <p ui-card-description>Loading placeholder shimmer.</p>
-          </div>
-          <div ui-card-content class="space-y-3">
-            @if (loadingDemo()) {
-              <div class="flex items-center gap-3">
-                <ui-skeleton class="size-10 rounded-full" />
-                <div class="space-y-1">
-                  <ui-skeleton class="h-2 w-24" />
-                  <ui-skeleton class="h-2 w-32" />
-                </div>
-              </div>
-              <ui-skeleton class="h-20 w-full" />
-              <ui-skeleton class="h-2 w-full" />
-              <ui-skeleton class="h-2 w-3/4" />
-            } @else {
-              <div class="text-sm text-muted-foreground">
-                <div class="flex items-center gap-3 mb-3">
-                  <ui-avatar class="size-10">
-                    <ui-avatar-fallback>JD</ui-avatar-fallback>
-                  </ui-avatar>
-                  <div>
-                    <p class="font-medium">John Doe</p>
-                    <p class="text-xs">john&#64;example.com</p>
+        @if (!results().length) {
+          <ui-empty-state
+            [icon]="searchXIcon"
+            [title]="'uiKit.empty.title' | translate"
+            [description]="'uiKit.empty.description' | translate"
+            headingTag="h2"
+          >
+            <ng-template #searchXIcon><lucide-icon [img]="SearchXIcon" /></ng-template>
+            <button ui-button variant="outline" size="sm" class="mt-4" (click)="clearFilters()">{{ 'uiKit.empty.clear' | translate }}</button>
+          </ui-empty-state>
+        } @else {
+          <div class="grid items-start gap-4 xl:grid-cols-2">
+            @for (entry of results(); track entry.kind + ':' + entry.name) {
+              <ui-card [id]="entry.name" class="scroll-mt-20">
+                <ui-card-header class="gap-2 space-y-0 p-4 pb-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-base leading-none font-semibold tracking-tight">
+                      <a
+                        [routerLink]="[]"
+                        [fragment]="entry.name"
+                        queryParamsHandling="preserve"
+                        class="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                      >{{ entry.title }}</a>
+                    </h3>
+                    <code class="text-muted-foreground font-mono text-xs">{{ entry.name }}</code>
+                    <div class="ml-auto flex items-center gap-1.5">
+                      <ui-badge variant="secondary">{{ 'uiKit.category.' + categoryKey(entry.category) | translate }}</ui-badge>
+                      <ui-badge [variant]="statusVariant[entry.status]">{{ 'uiKit.status.' + statusKey[entry.status] | translate }}</ui-badge>
+                    </div>
                   </div>
-                </div>
-                <p>Content loaded successfully.</p>
-              </div>
+                  <ui-card-description class="text-sm">{{ entry.whenToUse ?? entry.description }}</ui-card-description>
+                  @if (entry.whenToUse && entry.description) {
+                    <p class="text-muted-foreground line-clamp-2 text-xs">{{ entry.description }}</p>
+                  }
+                </ui-card-header>
+
+                <ui-card-content class="space-y-4 p-4">
+                  <!-- Live demo, loaded when the card scrolls into view. Charts
+                       and the map get their own defer blocks (= own chunks). -->
+                  @if (entry.kind === 'ui' && demoNames.has(entry.name)) {
+                    <div class="bg-background min-h-24 rounded-lg border p-4" role="group" [attr.aria-label]="'uiKit.card.demo' | translate">
+                      @if (entry.name === 'charts') {
+                        @defer (on viewport) {
+                          <app-ui-kit-demo-charts />
+                        } @placeholder {
+                          <div class="space-y-2" [attr.aria-label]="'uiKit.card.loadingDemo' | translate">
+                            <ui-skeleton class="h-4 w-1/3" />
+                            <ui-skeleton class="h-16 w-full" />
+                          </div>
+                        }
+                      } @else if (entry.name === 'leaflet-map') {
+                        @defer (on viewport) {
+                          <app-ui-kit-demo-map />
+                        } @placeholder {
+                          <div class="space-y-2" [attr.aria-label]="'uiKit.card.loadingDemo' | translate">
+                            <ui-skeleton class="h-4 w-1/3" />
+                            <ui-skeleton class="h-16 w-full" />
+                          </div>
+                        }
+                      } @else {
+                        @defer (on viewport) {
+                          <app-ui-kit-demo [name]="entry.name" />
+                        } @placeholder {
+                          <div class="space-y-2" [attr.aria-label]="'uiKit.card.loadingDemo' | translate">
+                            <ui-skeleton class="h-4 w-1/3" />
+                            <ui-skeleton class="h-16 w-full" />
+                          </div>
+                        }
+                      }
+                    </div>
+                  }
+
+                  @if (entry.partOf) {
+                    <p class="text-muted-foreground text-xs">
+                      <a
+                        [routerLink]="[]"
+                        [fragment]="entry.partOf"
+                        queryParamsHandling="preserve"
+                        class="text-foreground underline-offset-4 hover:underline"
+                      >{{ 'uiKit.card.partOf' | translate }}</a>
+                    </p>
+                  }
+
+                  @if (entry.status !== 'available') {
+                    <div class="space-y-2">
+                      <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">{{ 'uiKit.card.usedIn' | translate }}</p>
+                      @if (!entry.usedIn.length) {
+                        <p class="text-muted-foreground text-xs">{{ 'uiKit.card.notUsed' | translate }}</p>
+                      } @else {
+                        <ul class="flex flex-wrap gap-1.5">
+                          @for (link of visibleUsedIn(entry); track link.label) {
+                            <li>
+                              @if (link.to) {
+                                <a
+                                  [routerLink]="link.to"
+                                  class="hover:bg-accent focus-visible:ring-ring inline-flex rounded-md border px-2 py-0.5 text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                                >{{ link.label }}</a>
+                              } @else {
+                                <span class="text-muted-foreground inline-flex rounded-md border border-dashed px-2 py-0.5 text-xs">{{ link.label }}</span>
+                              }
+                            </li>
+                          }
+                          @if (entry.usedIn.length > usedInLimit && !expanded().has(entry.name)) {
+                            <li>
+                              <button
+                                type="button"
+                                class="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex rounded-md px-2 py-0.5 text-xs tabular-nums focus-visible:ring-2 focus-visible:outline-none"
+                                (click)="expand(entry.name)"
+                              >+{{ entry.usedIn.length - usedInLimit }}</button>
+                            </li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                  }
+
+                  <div class="space-y-2">
+                    <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+                      {{ (entry.installCmd ? 'uiKit.card.install' : 'uiKit.card.source') | translate }}
+                    </p>
+                    @if (entry.installCmd; as cmd) {
+                      <div class="bg-muted flex items-center gap-2 rounded-md py-1 pr-1 pl-3">
+                        <code class="text-muted-foreground min-w-0 flex-1 truncate font-mono text-xs">{{ cmd }}</code>
+                        <button
+                          ui-button
+                          variant="ghost"
+                          size="icon-sm"
+                          class="shrink-0"
+                          [attr.aria-label]="(copied() === cmd ? 'uiKit.card.copied' : 'uiKit.card.copy') | translate"
+                          (click)="copy(cmd)"
+                        >
+                          <lucide-icon
+                            [img]="copied() === cmd ? CheckIcon : CopyIcon"
+                            [class]="'size-4' + (copied() === cmd ? ' text-success' : '')"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <span class="sr-only" aria-live="polite">{{ copied() === cmd ? ('uiKit.card.copied' | translate) : '' }}</span>
+                      </div>
+                    } @else {
+                      <p class="text-muted-foreground text-xs">
+                        @if (entry.kind === 'block') {
+                          {{ 'uiKit.card.localBlock' | translate }}
+                        }
+                        <code class="font-mono">{{ entry.kind === 'ui' ? 'src/app/components/ui/' + entry.name + '/' : 'src/app/components/blocks/' + entry.file }}</code>
+                      </p>
+                    }
+                  </div>
+                </ui-card-content>
+
+                @if (entry.docsUrl) {
+                  <ui-card-footer class="p-4 pt-0">
+                    <a ui-button variant="ghost" size="sm" class="text-muted-foreground -ml-2" [href]="entry.docsUrl" target="_blank" rel="noopener">
+                      {{ 'uiKit.card.docs' | translate }}
+                      <lucide-icon [img]="ExternalLinkIcon" class="size-4" aria-hidden="true" />
+                    </a>
+                  </ui-card-footer>
+                }
+              </ui-card>
             }
           </div>
-        </div>
-
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">ThemeSwitch</h3>
-            <p ui-card-description>Light / dark / system toggle.</p>
-          </div>
-          <div ui-card-content class="space-y-3">
-            <ui-theme-switch modelValue="light" variant="cards" />
-            <ui-theme-switch modelValue="dark" variant="icons" />
-            <ui-theme-switch modelValue="system" variant="pill" />
-          </div>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Accordion</h3>
-            <p ui-card-description>Collapsible content sections.</p>
-          </div>
-          <div ui-card-content>
-            <ui-accordion type="single" [collapsible]="true">
-              <ui-accordion-item value="item-1">
-                <ui-accordion-trigger>Is it accessible?</ui-accordion-trigger>
-                <ui-accordion-content>Yes. It adheres to the WAI-ARIA design pattern for accordions.</ui-accordion-content>
-              </ui-accordion-item>
-              <ui-accordion-item value="item-2">
-                <ui-accordion-trigger>Can I customize styles?</ui-accordion-trigger>
-                <ui-accordion-content>
-                  Absolutely. All components are built with Tailwind and expose class props.
-                </ui-accordion-content>
-              </ui-accordion-item>
-              <ui-accordion-item value="item-3">
-                <ui-accordion-trigger>Is it SSR-friendly?</ui-accordion-trigger>
-                <ui-accordion-content>Yes. Components work with Angular SSR and hydration.</ui-accordion-content>
-              </ui-accordion-item>
-            </ui-accordion>
-          </div>
-        </div>
-
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">Collapsible</h3>
-            <p ui-card-description>Show/hide content with animation.</p>
-          </div>
-          <div ui-card-content>
-            <ui-collapsible>
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">&#64;peduarte starred 3 repos</p>
-                <button ui-button ui-collapsible-trigger variant="ghost" size="sm">Toggle</button>
-              </div>
-              <ui-collapsible-content class="space-y-2 mt-2">
-                <div class="rounded-md border px-3 py-2 text-xs font-mono">&#64;radix-ui/primitives</div>
-                <div class="rounded-md border px-3 py-2 text-xs font-mono">&#64;radix-ui/colors</div>
-                <div class="rounded-md border px-3 py-2 text-xs font-mono">&#64;radix-ui/react-slot</div>
-              </ui-collapsible-content>
-            </ui-collapsible>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid gap-4 sm:grid-cols-2">
-        <ui-section-card title="Account details" description="Your workspace identity">
-          <ui-data-list>
-            <ui-data-list-item>
-              <span class="text-sm text-muted-foreground">Status</span>
-              <span ui-badge variant="secondary">Active</span>
-            </ui-data-list-item>
-            <ui-data-list-item>
-              <span class="text-sm text-muted-foreground">Region</span>
-              <span class="text-sm">us-east-1</span>
-            </ui-data-list-item>
-            <ui-data-list-item>
-              <span class="text-sm text-muted-foreground">Plan</span>
-              <span ui-badge>Pro</span>
-            </ui-data-list-item>
-            <ui-data-list-item>
-              <span class="text-sm text-muted-foreground">Seats</span>
-              <span class="text-sm">8 of 25</span>
-            </ui-data-list-item>
-          </ui-data-list>
-        </ui-section-card>
-
-        <div ui-card>
-          <div ui-card-header>
-            <h3 ui-card-title class="text-base">IconBox + OverlayScroll</h3>
-            <p ui-card-description>Icon containers and custom scrollbars.</p>
-          </div>
-          <div ui-card-content class="space-y-3">
-            <div class="flex gap-2">
-              <ui-icon-box>
-                <lucide-icon [img]="Mail" class="size-4" />
-              </ui-icon-box>
-              <ui-icon-box variant="muted">
-                <lucide-icon [img]="Settings" class="size-4" />
-              </ui-icon-box>
-              <ui-icon-box variant="muted">
-                <lucide-icon [img]="Palette" class="size-4" />
-              </ui-icon-box>
-              <ui-icon-box variant="custom">
-                <lucide-icon [img]="ScanFace" class="size-4" />
-              </ui-icon-box>
-            </div>
-            <ui-overlay-scroll class="h-24 rounded-md border p-2">
-              @for (i of scrollLines; track i) {
-                <p class="text-xs py-1">Scrollable content line {{ i }}</p>
-              }
-            </ui-overlay-scroll>
-          </div>
-        </div>
-      </div>
-
-      <div ui-card>
-        <div ui-card-header>
-          <h3 ui-card-title class="text-base">RichTextEditor</h3>
-          <p ui-card-description>Tiptap-based editor with formatting toolbar.</p>
-        </div>
-        <div ui-card-content>
-          <div class="rounded-md border border-dashed p-4 text-center">
-            <p class="text-sm font-medium">Rich text editor — pending &#64;tiptap install</p>
-            <p class="text-muted-foreground mt-1 text-xs">
-              The registry's rich-text-editor needs &#64;tiptap/* packages. Install them and copy the component to
-              enable this section.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+        }
+      </ui-page-body>
+    </ui-page>
   `,
 })
 export class DashboardUiKitComponent {
-  protected readonly Bold = Bold
-  protected readonly CircleAlert = CircleAlert
-  protected readonly Copy = Copy
-  protected readonly CreditCard = CreditCard
-  protected readonly Hash = Hash
-  protected readonly House = House
-  protected readonly ImageIcon = ImageIcon
-  protected readonly Italic = Italic
-  protected readonly LinkIcon = LinkIcon
-  protected readonly List = List
-  protected readonly ListOrdered = ListOrdered
-  protected readonly Mail = Mail
-  protected readonly Palette = Palette
-  protected readonly ScanFace = ScanFace
-  protected readonly Search = Search
-  protected readonly Settings = Settings
-  protected readonly Underline = Underline
-  protected readonly User = User
-  protected readonly X = X
+  protected readonly ChevronDownIcon = ChevronDown
+  protected readonly StarIcon = Star
+  protected readonly SearchIcon = Search
+  protected readonly SearchXIcon = SearchX
+  protected readonly CopyIcon = Copy
+  protected readonly CheckIcon = Check
+  protected readonly ExternalLinkIcon = ExternalLink
 
-  readonly kpiItems = KPI_ITEMS
-  readonly scrollLines = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  protected readonly colorGroups = COLOR_GROUPS
+  protected readonly typeRoles = TYPE_ROLES
+  protected readonly gaps = GAPS
+  protected readonly iconSizes = ICON_SIZES
+  protected readonly categories = CATALOG_CATEGORIES
+  protected readonly categoryKey = categoryKey
+  protected readonly statusVariant = STATUS_VARIANT
+  protected readonly statusKey = STATUS_KEY
+  protected readonly usedInLimit = USED_IN_LIMIT
+  protected readonly demoNames = DEMO_NAMES
+  protected readonly statusOptions: { value: CatalogStatus | 'all', key: string }[] = [
+    { value: 'all', key: 'all' },
+    { value: 'installed', key: 'installed' },
+    { value: 'available', key: 'available' },
+    { value: 'demo-only', key: 'demoOnly' },
+  ]
 
-  readonly otpValue = signal('')
-  readonly dialogOpen = signal(false)
-  readonly sheetOpen = signal(false)
-  readonly sliderValue = signal([65])
-  readonly loadingDemo = signal(true)
+  private readonly route = inject(ActivatedRoute)
+  private readonly router = inject(Router)
+  private readonly i18n = inject(I18nService)
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID))
 
-  constructor(title: Title) {
-    title.setTitle('UI Kit')
-    if (isPlatformBrowser(inject(PLATFORM_ID))) {
-      setTimeout(() => this.loadingDemo.set(false), 2000)
+  readonly pageTitle = injectPageTitle()
+
+  // Filters live in the URL so a search can be shared and survives reload.
+  private readonly query = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap })
+  readonly q = computed(() => this.query().get('q') ?? '')
+  readonly category = computed<CatalogCategory | 'all'>(() => {
+    const v = this.query().get('cat') as CatalogCategory | null
+    return v && CATALOG_CATEGORIES.includes(v) ? v : 'all'
+  })
+  readonly status = computed<CatalogStatus | 'all'>(() => {
+    const v = this.query().get('status') as CatalogStatus | null
+    return v && CATALOG_STATUSES.includes(v) ? v : 'all'
+  })
+
+  readonly results = computed(() => searchCatalog(ENTRIES, { q: this.q(), category: this.category(), status: this.status() }))
+  readonly resultsLabel = computed(() => {
+    this.i18n.lang()
+    return this.i18n.tc('uiKit.toolbar.results', this.results().length, { count: this.results().length })
+  })
+
+  // Type into a local draft; push to the URL once typing pauses.
+  readonly draft = signal(this.q())
+  private draftTimer: ReturnType<typeof setTimeout> | undefined
+
+  constructor() {
+    // Deep links (#range-calendar) scroll to the card once it has rendered.
+    afterNextRender(() => {
+      const id = this.route.snapshot.fragment
+      if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' })
+    })
+  }
+
+  readonly expanded = signal<ReadonlySet<string>>(new Set())
+  readonly copied = signal<string | null>(null)
+  private copiedTimer: ReturnType<typeof setTimeout> | undefined
+
+  private readonly usedInLinks = computed(() => {
+    this.i18n.lang()
+    const t = (k: string, p?: Record<string, string | number>) => this.i18n.t(k, p)
+    const cache = new Map<string, UsedInLink>()
+    const link = (key: string): UsedInLink => {
+      if (key.startsWith('layout:')) return { label: t('uiKit.card.layout', { name: key.slice(7) }) }
+      if (key === 'app:root') return { label: t('uiKit.card.appShell') }
+      if (key.includes(':')) return { label: key }
+      return { label: key === '/' ? t('uiKit.card.home') : routeLabel(key, t), to: key }
     }
+    return (key: string) => {
+      if (!cache.has(key)) cache.set(key, link(key))
+      return cache.get(key)!
+    }
+  })
+
+  visibleUsedIn(entry: CatalogEntry): UsedInLink[] {
+    const keys = this.expanded().has(entry.name) ? entry.usedIn : entry.usedIn.slice(0, USED_IN_LIMIT)
+    const resolve = this.usedInLinks()
+    return keys.map(resolve)
+  }
+
+  expand(name: string): void {
+    this.expanded.update(s => new Set(s).add(name))
+  }
+
+  onDraft(value: string): void {
+    this.draft.set(value)
+    clearTimeout(this.draftTimer)
+    this.draftTimer = setTimeout(() => this.setQuery('q', value.trim()), 200)
+  }
+
+  setQuery(key: 'q' | 'cat' | 'status', value: string): void {
+    const fallback = key === 'q' ? '' : 'all'
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [key]: value && value !== fallback ? value : null },
+      queryParamsHandling: 'merge',
+      preserveFragment: true,
+      replaceUrl: true,
+    })
+  }
+
+  clearFilters(): void {
+    this.draft.set('')
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true })
+  }
+
+  copy(cmd: string): void {
+    if (!this.isBrowser) return
+    navigator.clipboard?.writeText(cmd).then(() => {
+      this.copied.set(cmd)
+      clearTimeout(this.copiedTimer)
+      this.copiedTimer = setTimeout(() => this.copied.set(null), 1500)
+    }).catch(() => undefined)
   }
 }
