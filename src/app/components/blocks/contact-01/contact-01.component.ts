@@ -119,7 +119,7 @@ export interface Contact01SubmitPayload {
           <div ui-card>
             @if (!sent()) {
               <div ui-card-header>
-                <h3 ui-card-title>Send us a message</h3>
+                <h3 ui-card-title class="leading-tight">Send us a message</h3>
                 <p ui-card-description>We reply during business hours (PT)</p>
               </div>
               <div ui-card-content>
@@ -134,6 +134,7 @@ export interface Contact01SubmitPayload {
                         id="contact-name"
                         [value]="name()"
                         (valueChange)="name.set($event)"
+                        autoComplete="off"
                         required
                       />
                     </div>
@@ -144,6 +145,7 @@ export interface Contact01SubmitPayload {
                         [value]="email()"
                         (valueChange)="email.set($event)"
                         type="email"
+                        autoComplete="off"
                         required
                       />
                     </div>

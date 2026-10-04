@@ -1,1 +1,1 @@
-export { UiBento01Component, type BentoEventFilter, type BentoTelemetryEvent } from './bento-01.component'
+export { UiBento01Component } from './bento-01.component'

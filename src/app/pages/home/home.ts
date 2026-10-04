@@ -1,4 +1,4 @@
-// Marketing landing — mirrors nuxt-boilerplate `app/pages/index.vue` 1:1:
+// Marketing landing — mirrors next-boilerplate `app/(marketing)/page.tsx` 1:1:
 // Header + Hero/Logos/Features/Bento/Pricing/Testimonials/Faq/Contact/Cta
 // sections (each scroll-margined for anchor links) + Footer.
 import { Component, OnInit, inject } from '@angular/core'
@@ -32,8 +32,18 @@ import { UiFooter01Component } from '@/app/components/blocks/footer-01'
   ],
   template: `
     <div class="bg-background text-foreground min-h-screen">
+      <a
+        href="#main-content"
+        class="bg-background text-foreground ring-ring sr-only z-50 rounded-md text-sm font-medium shadow-md ring-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:px-3 focus:py-2"
+      >
+        Skip to content
+      </a>
       <ui-header-01 />
-      <main class="[&>section]:scroll-mt-20">
+      <main
+        id="main-content"
+        tabindex="-1"
+        class="outline-none [&>section]:scroll-mt-20"
+      >
         <section id="top">
           <ui-hero-01 />
         </section>

@@ -3,7 +3,10 @@
 // them straight to /api/billing/checkout.
 // Port of nuxt-boilerplate/app/components/blocks/Pricing01.vue 1:1 — emits
 // `subscribe` (plan, cycle) and `contactSales`; the consumer wires checkout.
+// Unbound outputs fall back to plain links (/sign-up, /login), like Next's
+// optional onSubscribe / onContactSales props.
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core'
+import { RouterLink } from '@angular/router'
 import { Check, LucideAngularModule, Sparkles } from 'lucide-angular'
 import { cn } from '@/app/core/utils/cn'
 import { UiBadgeComponent } from '@/app/components/ui/badge/badge.component'
@@ -35,6 +38,7 @@ export interface Pricing01SubscribeEvent {
   standalone: true,
   host: { '[attr.class]': '"contents"' },
   imports: [
+    RouterLink,
     LucideAngularModule,
     UiBadgeComponent,
     UiButtonComponent,
@@ -94,32 +98,36 @@ export interface Pricing01SubscribeEvent {
             <div ui-card-content>
               <ul class="space-y-3 text-sm">
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Up to 10 employees</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Core HR + directory</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Time off + holidays</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Email support</span>
                 </li>
               </ul>
             </div>
             <div ui-card-footer>
-              <button
-                ui-button
-                class="w-full"
-                variant="outline"
-                (click)="subscribe.emit({ plan: 'pro', cycle: cycle() })"
-              >
-                Start free
-              </button>
+              @if (subscribe.observed) {
+                <button
+                  ui-button
+                  class="w-full"
+                  variant="outline"
+                  (click)="subscribe.emit({ plan: 'pro', cycle: cycle() })"
+                >
+                  Start free
+                </button>
+              } @else {
+                <a ui-button routerLink="/sign-up" class="w-full" variant="outline">Start free</a>
+              }
             </div>
           </div>
 
@@ -132,7 +140,7 @@ export interface Pricing01SubscribeEvent {
             </span>
             <div
               ui-card
-              class="border-primary shadow-sm ring-1 ring-primary/10"
+              class="border-primary ring-primary/10 shadow-sm ring-1"
             >
               <div ui-card-header>
                 <h3 ui-card-title class="text-xl">Team</h3>
@@ -145,35 +153,39 @@ export interface Pricing01SubscribeEvent {
               <div ui-card-content>
                 <ul class="space-y-3 text-sm">
                   <li class="flex items-start gap-2">
-                    <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                     <span>Unlimited employees</span>
                   </li>
                   <li class="flex items-start gap-2">
-                    <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                     <span>Payroll + tax filing</span>
                   </li>
                   <li class="flex items-start gap-2">
-                    <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                     <span>Onboarding workflows</span>
                   </li>
                   <li class="flex items-start gap-2">
-                    <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                     <span>Performance reviews</span>
                   </li>
                   <li class="flex items-start gap-2">
-                    <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                    <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                     <span>Slack + priority support</span>
                   </li>
                 </ul>
               </div>
               <div ui-card-footer>
-                <button
-                  ui-button
-                  class="w-full"
-                  (click)="subscribe.emit({ plan: 'team', cycle: cycle() })"
-                >
-                  Start 14-day trial
-                </button>
+                @if (subscribe.observed) {
+                  <button
+                    ui-button
+                    class="w-full"
+                    (click)="subscribe.emit({ plan: 'team', cycle: cycle() })"
+                  >
+                    Start 14-day trial
+                  </button>
+                } @else {
+                  <a ui-button routerLink="/sign-up" class="w-full">Start 14-day trial</a>
+                }
               </div>
             </div>
           </div>
@@ -189,36 +201,40 @@ export interface Pricing01SubscribeEvent {
             <div ui-card-content>
               <ul class="space-y-3 text-sm">
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Everything in Team</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>SSO + SCIM provisioning</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Audit logs + role policies</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>Dedicated success manager</span>
                 </li>
                 <li class="flex items-start gap-2">
-                  <lucide-icon [img]="Check" class="mt-0.5 size-4 shrink-0 text-[var(--success)]" />
+                  <lucide-icon [img]="Check" class="text-success mt-0.5 size-4 shrink-0" />
                   <span>99.99% SLA</span>
                 </li>
               </ul>
             </div>
             <div ui-card-footer>
-              <button
-                ui-button
-                class="w-full"
-                variant="outline"
-                (click)="contactSales.emit()"
-              >
-                Talk to sales
-              </button>
+              @if (contactSales.observed) {
+                <button
+                  ui-button
+                  class="w-full"
+                  variant="outline"
+                  (click)="contactSales.emit()"
+                >
+                  Talk to sales
+                </button>
+              } @else {
+                <a ui-button routerLink="/login" class="w-full" variant="outline">Talk to sales</a>
+              }
             </div>
           </div>
         </div>

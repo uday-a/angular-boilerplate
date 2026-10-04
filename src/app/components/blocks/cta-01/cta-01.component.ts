@@ -27,12 +27,14 @@ import { UiButtonComponent } from '@/app/components/ui/button/button.component'
         <p class="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
           Set up takes 12 minutes. Migrate from your current tool with one CSV upload.
         </p>
+        <!-- px-4 = the button's has-[>svg]:px-4, which can't match through the <lucide-icon> wrapper. -->
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
           @if (auth.loggedIn$ | async) {
             <a
               ui-button
               routerLink="/dashboard"
               size="lg"
+              class="px-4"
             >
               Go to dashboard
               <lucide-icon [img]="ArrowRight" class="ml-2 size-4" />
@@ -42,18 +44,19 @@ import { UiButtonComponent } from '@/app/components/ui/button/button.component'
               ui-button
               routerLink="/sign-up"
               size="lg"
+              class="px-4"
             >
               Start free trial
               <lucide-icon [img]="ArrowRight" class="ml-2 size-4" />
             </a>
           }
-          <button
+          <a
             ui-button
+            routerLink="/login"
             size="lg"
             variant="outline"
+            >Book a demo</a
           >
-            Book a demo
-          </button>
         </div>
         <p class="text-muted-foreground mt-4 text-xs">14-day free trial · No credit card required · Cancel anytime</p>
       </div>

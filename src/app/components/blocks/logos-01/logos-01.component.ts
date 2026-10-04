@@ -55,7 +55,7 @@ const LOGOS: CustomerLogo[] = [
           class="mt-10 grid grid-cols-2 items-center justify-items-center gap-x-10 gap-y-8 sm:grid-cols-3 lg:grid-cols-6"
         >
           @for (logo of logos; track logo.label) {
-            <div class="text-foreground inline-flex items-center gap-2">
+            <div class="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors">
               <svg
                 viewBox="0 0 24 24"
                 class="size-5 shrink-0"

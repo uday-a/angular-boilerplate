@@ -47,7 +47,7 @@ import {
             >Features</a
           >
           <a
-            routerLink="/pricing"
+            href="#pricing"
             class="text-muted-foreground hover:text-foreground text-sm transition-colors"
             >Pricing</a
           >
@@ -55,6 +55,11 @@ import {
             href="#customers"
             class="text-muted-foreground hover:text-foreground text-sm transition-colors"
             >Customers</a
+          >
+          <a
+            href="#docs"
+            class="text-muted-foreground hover:text-foreground text-sm transition-colors"
+            >Docs</a
           >
           <a
             href="#blog"
@@ -138,7 +143,7 @@ import {
                   >Features</a
                 >
                 <a
-                  routerLink="/pricing"
+                  href="#pricing"
                   class="hover:bg-muted rounded-md px-3 py-2 text-sm transition-colors"
                   (click)="mobileOpen.set(false)"
                   >Pricing</a
@@ -148,6 +153,12 @@ import {
                   class="hover:bg-muted rounded-md px-3 py-2 text-sm transition-colors"
                   (click)="mobileOpen.set(false)"
                   >Customers</a
+                >
+                <a
+                  href="#docs"
+                  class="hover:bg-muted rounded-md px-3 py-2 text-sm transition-colors"
+                  (click)="mobileOpen.set(false)"
+                  >Docs</a
                 >
                 <a
                   href="#blog"

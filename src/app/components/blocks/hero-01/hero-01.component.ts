@@ -60,12 +60,14 @@ import {
               One workspace for everything your team needs. Built on uipkge Angular primitives — fast, accessible, easy to
               customise.
             </p>
+            <!-- px-4 = the button's has-[>svg]:px-4, which can't match through the <lucide-icon> wrapper. -->
             <div class="flex flex-wrap items-center gap-3">
               @if (auth.loggedIn$ | async) {
                 <a
                   ui-button
                   routerLink="/dashboard"
                   size="lg"
+                  class="px-4"
                 >
                   Go to dashboard
                   <lucide-icon [img]="ArrowRight" class="ml-2 size-4" />
@@ -75,6 +77,7 @@ import {
                   ui-button
                   routerLink="/sign-up"
                   size="lg"
+                  class="px-4"
                 >
                   Start free trial
                   <lucide-icon [img]="ArrowRight" class="ml-2 size-4" />
@@ -87,8 +90,9 @@ import {
                 routerLink="/login"
                 size="lg"
                 variant="outline"
+                class="px-4"
               >
-                <lucide-icon [img]="PlayCircle" class="mr-2 size-4" />
+                <lucide-icon [img]="PlayCircle" class="size-4" aria-hidden="true" />
                 Try the live demo
               </a>
             </div>
@@ -99,12 +103,8 @@ import {
             </div>
           </div>
 
-          <!-- Product visual: main card in normal flow with the two stat
-               cards in a grid below it (same structure as the Nuxt Hero01).
-               Nothing here is absolutely positioned, so the cards can never
-               collide at wide viewports; the stat row hides below md so the
-               390px layout stays a single clean card. -->
-          <div class="relative mx-auto w-full max-w-md lg:mr-0">
+          <div class="relative mx-auto w-full max-w-md lg:mr-0" aria-hidden="true">
+            <!-- WHY: flat system -- shadow-sm only. Cards sit on borders, not elevation. -->
             <div
               ui-card
               class="shadow-sm"
@@ -152,7 +152,7 @@ import {
             <div class="relative -mt-4 hidden grid-cols-2 gap-4 px-4 md:grid">
               <div
                 ui-card
-                class="-rotate-2 shadow-sm"
+                class="rotate-2 shadow-sm"
               >
                 <div
                   ui-card-content
@@ -160,12 +160,12 @@ import {
                 >
                   <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Active users</p>
                   <p class="text-2xl font-semibold tracking-tight tabular-nums">1,284</p>
-                  <p class="text-xs text-[var(--success)]">+8.2% MoM</p>
+                  <p class="text-success text-xs">+8.2% MoM</p>
                 </div>
               </div>
               <div
                 ui-card
-                class="rotate-2 shadow-sm"
+                class="-rotate-2 shadow-sm"
               >
                 <div
                   ui-card-content
