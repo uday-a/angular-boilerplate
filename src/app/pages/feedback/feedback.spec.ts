@@ -82,7 +82,10 @@ describe('Feedback', () => {
     const req = http.expectOne('/api/feedback')
     expect(req.request.method).toBe('POST')
     expect(req.request.withCredentials).toBe(true)
-    expect(req.request.body).toEqual({ category: 'bug', subject: 'Broken thing', message: 'Steps to reproduce go here' })
+    // Multipart, so attached screenshots travel with the fields.
+    const body = req.request.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(Object.fromEntries([...body.entries()].filter(([, v]) => typeof v === 'string'))).toEqual({ category: 'bug', subject: 'Broken thing', message: 'Steps to reproduce go here' })
     req.flush({ ok: true, data: { delivered: true, id: 'abc' } })
     fixture.detectChanges()
     await fixture.whenStable()

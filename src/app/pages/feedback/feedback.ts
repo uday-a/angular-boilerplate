@@ -312,14 +312,14 @@ export class Feedback {
   onSend(): void {
     if (!this.browser || !this.canSend()) return
     this.status.set({ kind: 'sending' })
-    // ponytail: JSON body, so screenshots aren't uploaded yet — server/api/feedback.ts
-    // is JSON-only. Switch to FormData (like Nuxt) once it accepts multipart.
+    // Multipart so screenshots ride along (server re-validates them).
+    const form = new FormData()
+    form.append('category', this.category())
+    form.append('subject', this.subject())
+    form.append('message', this.message())
+    for (const f of this.files()) form.append('files', f, f.name)
     this.http
-      .post<ApiResponse<{ delivered: boolean, id: string | null }>>(
-        '/api/feedback',
-        { category: this.category(), subject: this.subject(), message: this.message() },
-        { withCredentials: true },
-      )
+      .post<ApiResponse<{ delivered: boolean, id: string | null }>>('/api/feedback', form, { withCredentials: true })
       .subscribe({
         next: (res) => {
           if (!res.ok) {
