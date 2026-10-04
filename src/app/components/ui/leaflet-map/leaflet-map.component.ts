@@ -400,7 +400,12 @@ export class UiLeafletMapComponent implements AfterViewInit, OnChanges, OnDestro
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['attribution'] && !this.attribution) this.showAttribution.set(false)
     if (!this.map || !this.Lmod) return
-    if (changes['center'] || changes['zoom']) {
+    // Compare coordinates, not array identity: a parent that rebuilds the
+    // `[lng, lat]` array each change-detection pass must not snap the view back.
+    const prev = changes['center']?.previousValue as [number, number] | undefined
+    const centerMoved =
+      !!changes['center'] && !(prev && prev[0] === this.center?.[0] && prev[1] === this.center?.[1])
+    if (centerMoved || changes['zoom']) {
       this.map.setView(toLatLng(this.center), this.zoom)
     }
     if (changes['variant'] || changes['tileUrl'] || changes['tileAttribution'] || changes['tileSubdomains']) {
