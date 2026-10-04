@@ -47,17 +47,13 @@ const angularApp = new AngularNodeAppEngine()
 // Baseline security headers for every response (API + SSR pages). CSP is
 // deliberately absent — the inline theme boot script + ECharts canvas need
 // per-route tuning first; a wrong CSP breaks the app silently.
-app.use((req, res, next) => {
+// HSTS is left to the host (Vercel sends it on its domains), as in the
+// sibling boilerplates.
+app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-  // HSTS only off-localhost: browsers ignore it over http, and setting it
-  // there would needlessly pin local dev domains.
-  const host = req.hostname ?? ''
-  if (host !== 'localhost' && host !== '127.0.0.1') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
-  }
   next()
 })
 
