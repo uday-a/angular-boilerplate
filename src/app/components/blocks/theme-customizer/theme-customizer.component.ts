@@ -1,6 +1,6 @@
 // Header "Customize" panel — a port of the uipkge.dev site customiser (via
 // nuxt-boilerplate's `ThemeCustomizer.vue`, see also next-boilerplate's
-// `ThemeCustomizer.tsx`): primary colour, corner radius and colour mode,
+// `ThemeCustomizer.tsx`): primary color, corner radius and color mode,
 // with a reset. Icon-pack switching is Nuxt-only (generated icon-pack
 // layer) — skipped here.
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core'
@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Sun,
 } from 'lucide-angular'
+import { TranslatePipe } from '@ngx-translate/core'
 import { ColorThemeService } from '@/app/core/theme/color-theme.service'
 import { ThemeService, type Theme } from '@/app/core/theme/theme.service'
 import { COLOR_THEMES, RADIUS_OPTIONS } from '@/app/core/theme/color-themes'
@@ -25,9 +26,9 @@ import {
 } from '@/app/components/ui/popover'
 
 const MODES = [
-  { id: 'light', icon: Sun, label: 'Light' },
-  { id: 'dark', icon: Moon, label: 'Dark' },
-  { id: 'system', icon: Monitor, label: 'System' },
+  { id: 'light', icon: Sun },
+  { id: 'dark', icon: Moon },
+  { id: 'system', icon: Monitor },
 ] as const
 
 @Component({
@@ -37,6 +38,7 @@ const MODES = [
   host: { '[attr.class]': '"contents"' },
   imports: [
     LucideAngularModule,
+    TranslatePipe,
     UiButtonComponent,
     UiPopoverComponent,
     UiPopoverContentComponent,
@@ -50,25 +52,25 @@ const MODES = [
         variant="ghost"
         size="icon"
         class="text-muted-foreground hover:text-foreground size-8"
-        aria-label="Customize theme"
-        title="Customize theme"
+        [attr.aria-label]="'header.theme.aria' | translate"
+        [title]="'header.theme.aria' | translate"
       >
         <lucide-icon [img]="Palette" class="size-4" />
       </button>
       <ui-popover-content align="end" class="w-[min(calc(100vw-2rem),22rem)] p-4">
         <div class="mb-4 border-b pb-3">
           <div class="flex items-baseline justify-between gap-2">
-            <span class="text-sm font-semibold">Customize</span>
-            <span class="text-muted-foreground text-xs">Saved automatically</span>
+            <span class="text-sm font-semibold">{{ 'header.theme.title' | translate }}</span>
+            <span class="text-muted-foreground text-xs">{{ 'header.theme.saved' | translate }}</span>
           </div>
           <div class="text-muted-foreground mt-0.5 truncate text-xs">
-            Brand colour, corners and light/dark mode
+            {{ 'header.theme.hint' | translate }}
           </div>
         </div>
 
         <div class="space-y-4">
           <fieldset>
-            <legend class="mb-2 text-xs font-semibold">Primary colour</legend>
+            <legend class="mb-2 text-xs font-semibold">{{ 'header.theme.primary' | translate }}</legend>
             <div class="grid grid-cols-3 gap-1.5">
               @for (c of themes; track c.id) {
                 <button
@@ -86,14 +88,14 @@ const MODES = [
                       <lucide-icon [img]="CheckIcon" class="size-2.5 text-white" />
                     }
                   </span>
-                  <span class="truncate">{{ c.label }}</span>
+                  <span class="truncate">{{ 'header.theme.names.' + c.id | translate }}</span>
                 </button>
               }
             </div>
           </fieldset>
 
           <fieldset>
-            <legend class="mb-2 text-xs font-semibold">Corner radius</legend>
+            <legend class="mb-2 text-xs font-semibold">{{ 'header.theme.radius' | translate }}</legend>
             <div class="grid grid-cols-5 gap-1.5">
               @for (r of radii; track r) {
                 <button
@@ -109,7 +111,7 @@ const MODES = [
           </fieldset>
 
           <fieldset>
-            <legend class="mb-2 text-xs font-semibold">Colour mode</legend>
+            <legend class="mb-2 text-xs font-semibold">{{ 'header.theme.mode' | translate }}</legend>
             <div class="grid grid-cols-3 gap-1.5">
               @for (m of modes; track m.id) {
                 <button
@@ -119,7 +121,7 @@ const MODES = [
                   (click)="theme.setTheme(m.id)"
                 >
                   <lucide-icon [img]="m.icon" class="size-3.5" />
-                  {{ m.label }}
+                  {{ 'header.theme.modes.' + m.id | translate }}
                 </button>
               }
             </div>
@@ -127,7 +129,7 @@ const MODES = [
 
           <button ui-button variant="outline" size="sm" class="text-muted-foreground w-full gap-2 text-xs" (click)="resetAll()">
             <lucide-icon [img]="ResetIcon" class="size-3.5" />
-            Reset to defaults
+            {{ 'header.theme.reset' | translate }}
           </button>
         </div>
       </ui-popover-content>

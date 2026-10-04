@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core'
 import { Component, Input, ChangeDetectionStrategy } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { Folder, Forward, LucideAngularModule, MoreHorizontal, Trash2 } from 'lucide-angular'
@@ -25,6 +26,7 @@ import type { SidebarProject } from './sidebar-02.models'
   standalone: true,
   host: { class: 'contents' },
   imports: [
+    TranslatePipe,
     LucideAngularModule,
     RouterLink,
     UiDropdownMenuComponent,
@@ -48,7 +50,7 @@ import type { SidebarProject } from './sidebar-02.models'
       column that lines up with NavMain.
     -->
     <ui-sidebar-group>
-      <ui-sidebar-group-label>Projects</ui-sidebar-group-label>
+      <ui-sidebar-group-label>{{ 'nav.groups.projects' | translate }}</ui-sidebar-group-label>
       <ul ui-sidebar-menu>
         @for (item of projects; track item.name) {
           <li ui-sidebar-menu-item>
@@ -64,7 +66,7 @@ import type { SidebarProject } from './sidebar-02.models'
             <ui-dropdown-menu>
               <button type="button" ui-sidebar-menu-action ui-dropdown-menu-trigger showOnHover>
                 <lucide-icon [img]="MoreHorizontal" class="size-4 shrink-0" />
-                <span class="sr-only">More</span>
+                <span class="sr-only">{{ 'nav.actions.more' | translate }}</span>
               </button>
               <ui-dropdown-menu-content
                 class="w-48 rounded-lg"
@@ -73,16 +75,16 @@ import type { SidebarProject } from './sidebar-02.models'
               >
                 <ui-dropdown-menu-item>
                   <lucide-icon [img]="Folder" class="text-muted-foreground" />
-                  <span>View Project</span>
+                  <span>{{ 'nav.actions.viewProject' | translate }}</span>
                 </ui-dropdown-menu-item>
                 <ui-dropdown-menu-item>
                   <lucide-icon [img]="Forward" class="text-muted-foreground" />
-                  <span>Share Project</span>
+                  <span>{{ 'nav.actions.shareProject' | translate }}</span>
                 </ui-dropdown-menu-item>
                 <ui-dropdown-menu-separator />
                 <ui-dropdown-menu-item>
                   <lucide-icon [img]="Trash2" class="text-muted-foreground" />
-                  <span>Delete Project</span>
+                  <span>{{ 'nav.actions.deleteProject' | translate }}</span>
                 </ui-dropdown-menu-item>
               </ui-dropdown-menu-content>
             </ui-dropdown-menu>
@@ -91,7 +93,7 @@ import type { SidebarProject } from './sidebar-02.models'
         <li ui-sidebar-menu-item>
           <button type="button" ui-sidebar-menu-button>
             <lucide-icon [img]="MoreHorizontal" class="size-4 shrink-0" />
-            <span>More</span>
+            <span>{{ 'nav.actions.more' | translate }}</span>
           </button>
         </li>
       </ul>

@@ -5,6 +5,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing'
 import { UiThemeCustomizerComponent } from '@/app/components/blocks/theme-customizer/theme-customizer.component'
 import { COLOR_THEMES } from '@/app/core/theme/color-themes'
 import { ColorThemeService } from '@/app/core/theme/color-theme.service'
+import { provideTestI18n, seedI18n } from '../../../../../test-utils/i18n'
 
 describe('UiThemeCustomizerComponent', () => {
   let fixture: ComponentFixture<UiThemeCustomizerComponent>
@@ -12,8 +13,9 @@ describe('UiThemeCustomizerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UiThemeCustomizerComponent],
-      providers: [provideZonelessChangeDetection()],
+      providers: [provideZonelessChangeDetection(), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(UiThemeCustomizerComponent)
     fixture.detectChanges()
     await fixture.whenStable()

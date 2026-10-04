@@ -2,6 +2,7 @@
 // is the full team switcher pattern -- avatar tile, label, kbd shortcut,
 // and a "Add team" footer row. Wire the select handler to your tenant API.
 
+import { TranslatePipe } from '@ngx-translate/core'
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core'
 import { AudioWaveform, Check, ChevronsUpDown, Command, LucideAngularModule, Plus } from 'lucide-angular'
 import {
@@ -33,6 +34,7 @@ const teams: SidebarTeam[] = [
   standalone: true,
   host: { class: 'contents' },
   imports: [
+    TranslatePipe,
     LucideAngularModule,
     UiSidebarMenuComponent,
     UiSidebarMenuItemComponent,
@@ -87,7 +89,7 @@ const teams: SidebarTeam[] = [
             align="start"
             [sideOffset]="4"
           >
-            <ui-dropdown-menu-label class="text-muted-foreground text-xs">Teams</ui-dropdown-menu-label>
+            <ui-dropdown-menu-label class="text-muted-foreground text-xs">{{ 'nav.groups.teams' | translate }}</ui-dropdown-menu-label>
             @for (team of teams; track team.name; let i = $index) {
               <ui-dropdown-menu-item class="gap-2 p-2" (select)="activeTeam.set(team)">
                 <div class="flex size-6 items-center justify-center rounded-sm border p-0.5">
@@ -116,7 +118,7 @@ const teams: SidebarTeam[] = [
               <div class="bg-background flex size-6 items-center justify-center rounded-md border">
                 <lucide-icon [img]="Plus" class="size-4" />
               </div>
-              <div class="text-muted-foreground font-medium">Add team</div>
+              <div class="text-muted-foreground font-medium">{{ 'nav.actions.addTeam' | translate }}</div>
             </ui-dropdown-menu-item>
           </ui-dropdown-menu-content>
         </ui-dropdown-menu>

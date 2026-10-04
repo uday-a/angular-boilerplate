@@ -1,10 +1,10 @@
 // Header control: switch UI language. Mirrors nuxt-boilerplate's
 // LocaleSwitcher.vue 1:1 (ghost sm trigger, Globe + current locale +
-// chevron, w-40 dropdown with check on the active locale). Labels stay
-// hardcoded English for v1; the i18n worker wires full catalogs.
+// chevron, w-40 dropdown with check on the active locale).
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core'
 import { toSignal } from '@angular/core/rxjs-interop'
 import { Check, ChevronDown, Globe, LucideAngularModule } from 'lucide-angular'
+import { TranslatePipe } from '@ngx-translate/core'
 import { I18nService, SUPPORTED_LOCALES } from '@/app/core/i18n/i18n.service'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
 import {
@@ -27,6 +27,7 @@ const LOCALE_LABELS: Record<string, string> = {
   standalone: true,
   host: { class: 'contents' },
   imports: [
+    TranslatePipe,
     LucideAngularModule,
     UiButtonComponent,
     UiDropdownMenuComponent,
@@ -45,15 +46,15 @@ const LOCALE_LABELS: Record<string, string> = {
         variant="ghost"
         size="sm"
         class="text-muted-foreground hover:text-foreground h-8 max-w-40 gap-1.5 px-2.5 text-xs font-medium"
-        aria-label="Language"
-        title="Language"
+        [attr.aria-label]="'header.language.label' | translate"
+        [title]="'header.language.label' | translate"
       >
         <lucide-icon [img]="Globe" class="size-3.5 shrink-0" aria-hidden="true" />
         <span class="truncate">{{ current() }}</span>
         <lucide-icon [img]="ChevronDown" class="size-3 shrink-0" aria-hidden="true" />
       </button>
       <ui-dropdown-menu-content align="end" class="w-40">
-        <ui-dropdown-menu-label class="text-muted-foreground text-xs font-medium">Language</ui-dropdown-menu-label>
+        <ui-dropdown-menu-label class="text-muted-foreground text-xs font-medium">{{ 'header.language.label' | translate }}</ui-dropdown-menu-label>
         <ui-dropdown-menu-separator />
         @for (o of options; track o.code) {
           <ui-dropdown-menu-item (select)="setLocale(o.code)">

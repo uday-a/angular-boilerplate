@@ -16,20 +16,35 @@
 //   this.i18n.t('auth.mfa.invalidCode', { code: '123456' }) // interpolates
 //   this.i18n.setLocale('es')                               // switch language
 //   this.i18n.locale$                                       // Observable<string>
-import { Injectable, inject } from '@angular/core'
+import { DOCUMENT, Injectable, PLATFORM_ID, inject, signal } from '@angular/core'
+import { isPlatformBrowser } from '@angular/common'
 import { TranslateService } from '@ngx-translate/core'
-import { BehaviorSubject, type Observable } from 'rxjs'
+import { BehaviorSubject, firstValueFrom, type Observable } from 'rxjs'
 
 export const DEFAULT_LOCALE = 'en'
 export const SUPPORTED_LOCALES = ['en', 'es'] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 
+// Persisted choice. Read on SSR (i18n.providers.ts) so the first paint is
+// already in the chosen language, and `<html lang>` matches.
+export const LOCALE_COOKIE = 'uipkge-locale'
+
+export function normalizeLocale(locale: string | null | undefined): SupportedLocale {
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale ?? '') ? (locale as SupportedLocale) : DEFAULT_LOCALE
+}
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   private readonly translate = inject(TranslateService)
+  private readonly document = inject(DOCUMENT)
+  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
 
   private readonly localeSubject = new BehaviorSubject<string>(DEFAULT_LOCALE)
   readonly locale$: Observable<string> = this.localeSubject.asObservable()
+
+  // Active language, set once its catalog has loaded — read it inside a
+  // computed() to re-translate on switch (t() is not reactive by itself).
+  readonly lang = signal<string>(DEFAULT_LOCALE)
 
   get locale(): string {
     return this.localeSubject.value
@@ -54,9 +69,23 @@ export class I18nService {
 
   // Single-URL switch (no route change, like Nuxt's no_prefix strategy).
   // Unknown locales fall back to DEFAULT_LOCALE instead of breaking.
+  // Persists to the locale cookie and updates `<html lang>`.
   setLocale(locale: string): void {
-    const next = (SUPPORTED_LOCALES as readonly string[]).includes(locale) ? locale : DEFAULT_LOCALE
+    void this.use(locale)
+    if (this.browser) this.document.cookie = `${LOCALE_COOKIE}=${this.locale}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`
+  }
+
+  // Boot-time restore (i18n.providers.ts): the saved locale — from the
+  // cookie in the browser, from the SSR context on the server — resolves
+  // before first render, so SSR HTML is already translated.
+  async restore(saved: string | null | undefined): Promise<void> {
+    await this.use(saved).catch(() => undefined)
+  }
+
+  private use(locale: string | null | undefined): Promise<unknown> {
+    const next = normalizeLocale(locale)
     this.localeSubject.next(next)
-    this.translate.use(next).subscribe()
+    this.document.documentElement.lang = next
+    return firstValueFrom(this.translate.use(next)).then(() => this.lang.set(next))
   }
 }

@@ -3,8 +3,8 @@
 // router outlet. Ports nuxt-boilerplate's DashboardLayout.vue + sidebar-02/
 // Sidebar02.vue to Angular standalone + signals.
 //
-// Nav labels are hardcoded English for v1; the i18n worker wires I18nService
-// once the nav catalogs land.
+// Nav titles are `nav.items.*` keys, translated per render (and on locale
+// switch) like Nuxt's t('nav.items.*').
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core'
 import { toSignal } from '@angular/core/rxjs-interop'
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router'
@@ -16,14 +16,12 @@ import {
   FileText,
   Folder,
   KanbanSquare,
-  KeyRound,
   LayoutDashboard,
   LayoutTemplate,
   LifeBuoy,
   LucideAngularModule,
   MapPin,
   MessageSquare,
-  ScrollText,
   Send,
   Settings2,
   ShieldCheck,
@@ -31,9 +29,8 @@ import {
 } from 'lucide-angular'
 import { AuthService } from '@/app/core/auth/auth.service'
 import { I18nService } from '@/app/core/i18n'
-import { TranslateService } from '@ngx-translate/core'
 import { ThemeService, type Theme } from '@/app/core/theme/theme.service'
-import { breadcrumbSegmentLabel, routeLabel } from '@/app/core/dashboard/breadcrumb-labels'
+import { routeLabel } from '@/app/core/dashboard/breadcrumb-labels'
 import { isNavItemActive } from '@/app/core/dashboard/nav-active'
 import { UiBreadcrumbItemComponent, UiBreadcrumbLinkComponent, UiBreadcrumbListComponent, UiBreadcrumbPageComponent, UiBreadcrumbSeparatorComponent, UiBreadcrumbComponent } from '@/app/components/ui/breadcrumb/breadcrumb.component'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
@@ -55,43 +52,42 @@ import { NavProjectsComponent } from '@/app/components/blocks/sidebar-02/nav-pro
 import { NavSecondaryComponent } from '@/app/components/blocks/sidebar-02/nav-secondary.component'
 import { NavUserComponent } from '@/app/components/blocks/sidebar-02/nav-user.component'
 import { TeamSwitcherComponent } from '@/app/components/blocks/sidebar-02/team-switcher.component'
-import { UiCommandPaletteComponent, type CommandPaletteGroup, type CommandPaletteItem } from '@/app/components/blocks/command-palette/command-palette.component'
+import { UiCommandPaletteComponent, type CommandPaletteItem } from '@/app/components/blocks/command-palette/command-palette.component'
 import { UiLocaleSwitcherComponent } from '@/app/components/blocks/locale-switcher/locale-switcher.component'
 import { UiNotificationsPopoverComponent } from '@/app/components/blocks/notifications-popover/notifications-popover.component'
 import { UiThemeCustomizerComponent } from '@/app/components/blocks/theme-customizer'
 import type { SidebarNavItem, SidebarProject } from '@/app/components/blocks/sidebar-02/sidebar-02.models'
 
 const NAV_MAIN: Omit<SidebarNavItem, 'isActive'>[] = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Messages', url: '/dashboard/messages', icon: MessageSquare },
-  { title: 'Kanban', url: '/dashboard/kanban', icon: KanbanSquare },
-  { title: 'Customers', url: '/dashboard/data-table', icon: Table2 },
-  { title: 'Calendar', url: '/dashboard/calendar', icon: CalendarDays },
-  { title: 'Activity', url: '/dashboard/activity', icon: Activity },
-  { title: 'Locations', url: '/dashboard/locations', icon: MapPin },
-  { title: 'UI Kit', url: '/dashboard/ui-kit', icon: LayoutTemplate },
-  { title: 'Forms', url: '/dashboard/forms', icon: FileText },
+  { title: 'nav.items.dashboard', url: '/dashboard', icon: LayoutDashboard },
+  { title: 'nav.items.messages', url: '/dashboard/messages', icon: MessageSquare },
+  { title: 'nav.items.kanban', url: '/dashboard/kanban', icon: KanbanSquare },
+  { title: 'nav.items.dataTable', url: '/dashboard/data-table', icon: Table2 },
+  { title: 'nav.items.calendar', url: '/dashboard/calendar', icon: CalendarDays },
+  { title: 'nav.items.activity', url: '/dashboard/activity', icon: Activity },
+  { title: 'nav.items.locations', url: '/dashboard/locations', icon: MapPin },
+  { title: 'nav.items.uiKit', url: '/dashboard/ui-kit', icon: LayoutTemplate },
+  { title: 'nav.items.forms', url: '/dashboard/forms', icon: FileText },
   {
-    title: 'Settings',
+    title: 'nav.items.settings',
     url: '/settings',
     icon: Settings2,
     items: [
-      { title: 'General', url: '/settings/general' },
-      { title: 'Account', url: '/settings/account' },
-      { title: 'Security', url: '/settings/security' },
-      { title: 'API keys', url: '/settings/api-keys' },
-      { title: 'Notifications', url: '/settings/notifications' },
-      { title: 'Integrations', url: '/settings/integrations' },
-      { title: 'Team', url: '/settings/team' },
-      { title: 'Activity log', url: '/settings/activity' },
-      { title: 'Billing', url: '/settings/billing' },
-      { title: 'Limits', url: '/settings/limits' },
+      { title: 'nav.items.general', url: '/settings/general' },
+      { title: 'nav.items.account', url: '/settings/account' },
+      { title: 'nav.items.security', url: '/settings/security' },
+      { title: 'nav.items.apiKeys', url: '/settings/api-keys' },
+      { title: 'nav.items.notifications', url: '/settings/notifications' },
+      { title: 'nav.items.integrations', url: '/settings/integrations' },
+      { title: 'nav.items.team', url: '/settings/team' },
+      { title: 'nav.items.activityLog', url: '/settings/activity' },
+      { title: 'nav.items.billing', url: '/settings/billing' },
+      { title: 'nav.items.limits', url: '/settings/limits' },
     ],
   },
 ]
 
-// Admin group (role-gated in navMain). Titles are i18n keys, resolved
-// per render like Nuxt's t('nav.items.*').
+// Admin group (role-gated in navMain).
 const NAV_ADMIN: Omit<SidebarNavItem, 'isActive'> = {
   title: 'nav.items.admin',
   url: '/admin/users',
@@ -102,48 +98,15 @@ const NAV_ADMIN: Omit<SidebarNavItem, 'isActive'> = {
   ],
 }
 
-// Breadcrumb labels for the admin paths, as i18n keys.
-const ADMIN_CRUMB_KEYS: Record<string, string> = {
-  '/admin': 'nav.items.admin',
-  '/admin/users': 'nav.items.users',
-  '/admin/roles': 'nav.items.roles',
-}
-
 const NAV_SECONDARY: Omit<SidebarNavItem, 'isActive'>[] = [
-  { title: 'Support', url: '/support', icon: LifeBuoy },
-  { title: 'Feedback', url: '/feedback', icon: Send },
+  { title: 'nav.items.support', url: '/support', icon: LifeBuoy },
+  { title: 'nav.items.feedback', url: '/feedback', icon: Send },
 ]
 
 const PROJECTS: SidebarProject[] = [
   { name: 'Design Engineering', url: '/projects/design-engineering', icon: Folder },
   { name: 'Sales & Marketing', url: '/projects/sales-marketing', icon: Folder },
   { name: 'Travel', url: '/projects/travel', icon: Folder },
-]
-
-const COMMAND_GROUPS: CommandPaletteGroup[] = [
-  {
-    heading: 'Navigate',
-    items: [
-      { label: 'Dashboard', hint: '/dashboard', icon: LayoutDashboard },
-      { label: 'Kanban', hint: '/dashboard/kanban', icon: KanbanSquare },
-      { label: 'Customers', hint: '/dashboard/data-table', icon: Table2 },
-      { label: 'Calendar', hint: '/dashboard/calendar', icon: CalendarDays },
-      { label: 'Activity', hint: '/dashboard/activity', icon: Activity },
-      { label: 'Locations', hint: '/dashboard/locations', icon: MapPin },
-      { label: 'UI Kit', hint: '/dashboard/ui-kit', icon: LayoutTemplate },
-      { label: 'Forms', hint: '/dashboard/forms', icon: FileText },
-    ],
-  },
-  {
-    heading: 'Settings',
-    items: [
-      { label: 'General', hint: '/settings/general', icon: Settings2 },
-      { label: 'Account', hint: '/settings/account', icon: FileText },
-      { label: 'API keys', hint: '/settings/api-keys', icon: KeyRound },
-      { label: 'Activity log', hint: '/settings/activity', icon: ScrollText },
-      { label: 'Billing', hint: '/settings/billing', icon: FileText },
-    ],
-  },
 ]
 
 export interface DashboardCrumb {
@@ -215,10 +178,10 @@ export interface DashboardCrumb {
         <header
           class="bg-background sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between border-b px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <ui-sidebar-trigger class="-ml-1" />
             <ui-separator orientation="vertical" class="mr-2 h-4" />
-            <ui-breadcrumb>
+            <ui-breadcrumb class="min-w-0">
               <ui-breadcrumb-list>
                 @for (crumb of breadcrumbs(); track crumb.label; let i = $index; let last = $last) {
                   <ui-breadcrumb-item [class]="i === 0 ? 'hidden md:block' : ''">
@@ -241,7 +204,7 @@ export interface DashboardCrumb {
               </ui-breadcrumb-list>
             </ui-breadcrumb>
           </div>
-          <div class="flex items-center gap-1 px-2 sm:gap-3">
+          <div class="flex shrink-0 items-center gap-1 px-2 sm:gap-3">
             <a
               href="https://github.com/uday-a/angular-boilerplate"
               data-tour="github"
@@ -257,7 +220,7 @@ export interface DashboardCrumb {
               <span>Angular Starter</span>
             </a>
             <div data-tour="palette" class="inline-flex">
-              <ui-command-palette [groups]="commandGroups" (select)="onCommandSelect($event)" />
+              <ui-command-palette (select)="onCommandSelect($event)" />
             </div>
             <div class="flex items-center gap-0.5">
               <ui-locale-switcher />
@@ -304,12 +267,7 @@ export class DashboardLayoutComponent {
   private readonly router = inject(Router)
   private readonly auth = inject(AuthService)
   private readonly i18n = inject(I18nService)
-  // Read inside the computeds so a locale switch re-resolves translated labels.
-  // onLangChange (not locale$) fires after the new catalog has loaded.
-  private readonly locale = toSignal(inject(TranslateService).onLangChange, { initialValue: null })
   readonly theme = inject(ThemeService)
-
-  readonly commandGroups = COMMAND_GROUPS
 
   private readonly sessionUser = toSignal(this.auth.user$, { initialValue: null })
 
@@ -325,10 +283,7 @@ export class DashboardLayoutComponent {
     // The Admin section is role-gated client-side for navigation polish
     // only; the real enforcement is server-side (requireRole('admin')).
     const isAdmin = this.sessionUser()?.role === 'admin'
-    this.locale()
-    const t = (k: string) => this.i18n.t(k)
-    const admin = { ...NAV_ADMIN, title: t(NAV_ADMIN.title), items: NAV_ADMIN.items?.map((sub) => ({ ...sub, title: t(sub.title) })) }
-    return (isAdmin ? [...NAV_MAIN, admin] : NAV_MAIN).map((item) => {
+    return this.translateNav(isAdmin ? [...NAV_MAIN, NAV_ADMIN] : NAV_MAIN).map((item) => {
       const childActive = item.items?.some((sub) => isNavItemActive(path, sub.url)) ?? false
       const selfActive = isNavItemActive(path, item.url)
       return {
@@ -341,7 +296,7 @@ export class DashboardLayoutComponent {
 
   readonly navSecondary = computed(() => {
     const path = this.pathname()
-    return NAV_SECONDARY.map((item) => ({ ...item, isActive: isNavItemActive(path, item.url) }))
+    return this.translateNav(NAV_SECONDARY).map((item) => ({ ...item, isActive: isNavItemActive(path, item.url) }))
   })
 
   readonly projects = computed(() => {
@@ -350,23 +305,22 @@ export class DashboardLayoutComponent {
   })
 
   readonly breadcrumbs = computed<DashboardCrumb[]>(() => {
+    this.i18n.lang()
+    const t = (k: string) => this.i18n.t(k)
     const parts = this.pathname().split('/').filter(Boolean)
-    if (parts.length === 0) return [{ label: 'Dashboard' }]
-    this.locale()
-    return parts.map((p, i) => {
-      const prefix = '/' + parts.slice(0, i + 1).join('/')
-      const last = i === parts.length - 1
-      const key = ADMIN_CRUMB_KEYS[prefix]
-      if (key) return { label: this.i18n.t(key), href: last ? undefined : prefix }
-      return {
-        // The last crumb resolves against the full path (`/settings/activity`
-        // is "Activity log", `/dashboard/activity` is "Activity"); parents
-        // fall back to their segment label.
-        label: last ? routeLabel(prefix) : breadcrumbSegmentLabel(p),
-        href: last ? undefined : prefix,
-      }
+    if (parts.length === 0) return [{ label: t('nav.items.dashboard') }]
+    return parts.map((_, i) => {
+      const path = '/' + parts.slice(0, i + 1).join('/')
+      return { label: routeLabel(path, t), href: i < parts.length - 1 ? path : undefined }
     })
   })
+
+  // Reads i18n.lang() so the calling computed re-translates on locale switch.
+  private translateNav<T extends Omit<SidebarNavItem, 'isActive'>>(items: T[]): T[] {
+    this.i18n.lang()
+    const t = (k: string) => this.i18n.t(k)
+    return items.map((item) => ({ ...item, title: t(item.title), items: item.items?.map((sub) => ({ ...sub, title: t(sub.title) })) }))
+  }
 
   constructor() {
     // Refresh session state on shell entry (browser only; guard already ran).

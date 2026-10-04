@@ -1,10 +1,11 @@
-// i18n providers: @ngx-translate/core + HTTP loader + default-locale preload.
+// i18n providers: @ngx-translate/core + HTTP loader + saved-locale restore.
 // Registered once in app.config.ts via provideI18n().
-import { APP_INITIALIZER, type Provider } from '@angular/core'
-import { TranslateService, provideTranslateService } from '@ngx-translate/core'
+import { PLATFORM_ID, inject, provideAppInitializer, type EnvironmentProviders, type Provider } from '@angular/core'
+import { isPlatformBrowser } from '@angular/common'
+import { provideTranslateService } from '@ngx-translate/core'
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader'
-import { firstValueFrom } from 'rxjs'
-import { DEFAULT_LOCALE } from './i18n.service'
+import { injectSsrContext } from '../config/ssr-context'
+import { DEFAULT_LOCALE, I18nService, LOCALE_COOKIE } from './i18n.service'
 
 // Loader prefix, per platform. Relative URLs have no base href during SSR
 // (same constraint as home.ts's /api/ping gating), so the server build
@@ -18,26 +19,22 @@ export function i18nAssetsPrefix(): string {
   return `${siteUrl ?? 'http://localhost:4201'}/assets/i18n/`
 }
 
-export function provideI18n(): Provider[] {
+export function provideI18n(): (Provider | EnvironmentProviders)[] {
   return [
     provideTranslateService({ lang: DEFAULT_LOCALE, fallbackLang: DEFAULT_LOCALE }),
     // Registers TranslateLoader → TranslateHttpLoader (last provider wins
     // over the NoOp default above) plus the prefix/suffix config. Served
     // from angular.json's src/assets → /assets mapping.
     ...provideTranslateHttpLoader({ prefix: i18nAssetsPrefix(), suffix: '.json' }),
-    // Preload the default locale before first render so t() is warm on both
-    // platforms (SSR included — translated SSR HTML, no hydration mismatch).
-    // The loader already degrades a failed fetch to {} with a console.warn;
-    // the rejection handler is belt + suspenders so SSR never fails to boot.
-    {
-      provide: APP_INITIALIZER,
-      multi: true,
-      useFactory: (translate: TranslateService) => () =>
-        firstValueFrom(translate.use(DEFAULT_LOCALE)).then(
-          () => undefined,
-          () => undefined,
-        ),
-      deps: [TranslateService],
-    },
+    // Restore the saved locale (cookie) before first render so t() is warm
+    // on both platforms and SSR HTML is already translated, with a matching
+    // `<html lang>`. A failed catalog fetch degrades to keys, never blocks boot.
+    provideAppInitializer(() => {
+      const browser = isPlatformBrowser(inject(PLATFORM_ID))
+      const saved = browser
+        ? document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE}=([^;]+)`))?.[1]
+        : injectSsrContext()?.locale
+      return inject(I18nService).restore(saved)
+    }),
   ]
 }

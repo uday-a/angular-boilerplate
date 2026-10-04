@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router'
 import { LayoutDashboard } from 'lucide-angular'
 import { NavMainComponent } from '@/app/components/blocks/sidebar-02/nav-main.component'
 import { UiSidebarProviderComponent } from '@/app/components/ui/sidebar/sidebar.component'
+import { provideTestI18n, seedI18n } from '../../../../../test-utils/i18n'
 
 @Component({
   standalone: true,
@@ -38,8 +39,9 @@ describe('NavMainComponent (group toggle behaviour)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [NavMainHost],
-      providers: [provideZonelessChangeDetection(), provideRouter([])],
+      providers: [provideZonelessChangeDetection(), provideRouter([]), provideTestI18n()],
     }).compileComponents()
+    seedI18n()
     fixture = TestBed.createComponent(NavMainHost)
     fixture.detectChanges()
     await fixture.whenStable()

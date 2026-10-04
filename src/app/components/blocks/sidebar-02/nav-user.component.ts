@@ -1,3 +1,4 @@
+import { TranslatePipe } from '@ngx-translate/core'
 import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core'
 import {
   BadgeCheck,
@@ -48,6 +49,7 @@ export type SidebarTheme = Theme
   standalone: true,
   host: { class: 'contents' },
   imports: [
+    TranslatePipe,
     LucideAngularModule,
     UiAvatarComponent,
     UiAvatarFallbackComponent,
@@ -115,22 +117,22 @@ export type SidebarTheme = Theme
             <ui-dropdown-menu-group>
               <ui-dropdown-menu-item>
                 <lucide-icon [img]="Sparkles" />
-                Upgrade to Pro
+                {{ 'nav.user.upgrade' | translate }}
               </ui-dropdown-menu-item>
             </ui-dropdown-menu-group>
             <ui-dropdown-menu-separator />
             <ui-dropdown-menu-group>
               <ui-dropdown-menu-item (click)="profileSelect.emit('account')">
                 <lucide-icon [img]="BadgeCheck" />
-                Account
+                {{ 'nav.user.account' | translate }}
               </ui-dropdown-menu-item>
               <ui-dropdown-menu-item (click)="profileSelect.emit('billing')">
                 <lucide-icon [img]="CreditCard" />
-                Billing
+                {{ 'nav.user.billing' | translate }}
               </ui-dropdown-menu-item>
               <ui-dropdown-menu-item (click)="profileSelect.emit('notifications')">
                 <lucide-icon [img]="Bell" />
-                Notifications
+                {{ 'nav.user.notifications' | translate }}
               </ui-dropdown-menu-item>
             </ui-dropdown-menu-group>
             <ui-dropdown-menu-separator />
@@ -157,7 +159,7 @@ export type SidebarTheme = Theme
             <ui-dropdown-menu-separator />
             <ui-dropdown-menu-item (click)="logout.emit()">
               <lucide-icon [img]="LogOut" />
-              Log out
+              {{ 'nav.user.logout' | translate }}
             </ui-dropdown-menu-item>
           </ui-dropdown-menu-content>
         </ui-dropdown-menu>

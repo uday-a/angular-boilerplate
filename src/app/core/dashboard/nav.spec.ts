@@ -1,34 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { breadcrumbSegmentLabel, routeLabel } from './breadcrumb-labels'
+import en from '../../../assets/i18n/en.json'
+import { routeLabel } from './breadcrumb-labels'
 import { isNavItemActive } from './nav-active'
 
-describe('breadcrumbSegmentLabel', () => {
-  it('maps known dashboard segments', () => {
-    expect(breadcrumbSegmentLabel('dashboard')).toBe('Dashboard')
-    expect(breadcrumbSegmentLabel('data-table')).toBe('Customers')
-    expect(breadcrumbSegmentLabel('ui-kit')).toBe('UI Kit')
-    expect(breadcrumbSegmentLabel('form-example')).toBe('Validated form')
-  })
-
-  it('maps API keys without humanize drift', () => {
-    expect(breadcrumbSegmentLabel('api-keys')).toBe('API keys')
-  })
-
-  it('title-cases unknown segments', () => {
-    expect(breadcrumbSegmentLabel('design-engineering')).toBe('Design engineering')
-  })
-})
+const t = (key: string) => key.split('.').reduce<unknown>((node, k) => (node as Record<string, unknown>)?.[k], en) as string ?? key
 
 describe('routeLabel', () => {
   it('disambiguates repeated segments by full path', () => {
-    expect(routeLabel('/settings/activity')).toBe('Activity log')
-    expect(routeLabel('/dashboard/activity')).toBe('Activity')
-    expect(routeLabel('/settings/api-keys')).toBe('API keys')
-    expect(routeLabel('/admin/roles')).toBe('Roles & permissions')
-    expect(routeLabel('/dashboard/data-table')).toBe('Customers')
+    expect(routeLabel('/settings/activity', t)).toBe('Activity log')
+    expect(routeLabel('/dashboard/activity', t)).toBe('Activity')
+    expect(routeLabel('/settings/api-keys', t)).toBe('API keys')
+    expect(routeLabel('/admin/roles', t)).toBe('Roles & permissions')
+    expect(routeLabel('/dashboard/data-table', t)).toBe('Customers')
+  })
+
+  it('humanizes unknown segments', () => {
+    expect(routeLabel('/projects/design-engineering', t)).toBe('Design engineering')
   })
 })
-
 describe('isNavItemActive', () => {
   it('matches dashboard exact-only', () => {
     expect(isNavItemActive('/dashboard', '/dashboard')).toBe(true)

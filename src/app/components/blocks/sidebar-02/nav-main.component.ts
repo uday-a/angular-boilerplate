@@ -3,6 +3,7 @@
 // also after client-side navigation, not only on first render — and stay
 // user-toggleable. The parent row of a group toggles it instead of
 // navigating; only the children are links.
+import { TranslatePipe } from '@ngx-translate/core'
 import { Component, Input, ChangeDetectionStrategy, OnChanges, signal } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { ChevronRight, LucideAngularModule } from 'lucide-angular'
@@ -29,6 +30,7 @@ import type { SidebarNavItem } from './sidebar-02.models'
   standalone: true,
   host: { class: 'contents' },
   imports: [
+    TranslatePipe,
     LucideAngularModule,
     RouterLink,
     UiCollapsibleComponent,
@@ -45,7 +47,7 @@ import type { SidebarNavItem } from './sidebar-02.models'
   ],
   template: `
     <ui-sidebar-group>
-      <ui-sidebar-group-label>Platform</ui-sidebar-group-label>
+      <ui-sidebar-group-label>{{ 'nav.groups.platform' | translate }}</ui-sidebar-group-label>
       <ul ui-sidebar-menu>
         @for (item of items; track item.title) {
           @if (item.items?.length) {
