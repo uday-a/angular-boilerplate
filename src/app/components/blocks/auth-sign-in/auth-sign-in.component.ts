@@ -12,7 +12,6 @@ import {
   UiCardDescriptionComponent,
   UiCardFooterComponent,
   UiCardHeaderComponent,
-  UiCardTitleComponent,
 } from '@/app/components/ui/card/card.component'
 import { UiCheckboxComponent } from '@/app/components/ui/checkbox/checkbox.component'
 import { UiInputComponent } from '@/app/components/ui/input/input.component'
@@ -41,7 +40,6 @@ export interface AuthSignInPayload {
     UiCardDescriptionComponent,
     UiCardFooterComponent,
     UiCardHeaderComponent,
-    UiCardTitleComponent,
     UiCheckboxComponent,
     UiInputComponent,
     UiLabelComponent,
@@ -51,11 +49,11 @@ export interface AuthSignInPayload {
     <div data-slot="auth-sign-in" [class]="rootClass">
       <div ui-card class="w-full max-w-sm">
         <div ui-card-header class="text-center">
-          <h2 ui-card-title class="text-2xl">{{ title }}</h2>
+          <h1 class="text-2xl leading-tight font-semibold tracking-tight">{{ title }}</h1>
           <p ui-card-description>{{ description }}</p>
         </div>
         <div ui-card-content>
-          <form class="space-y-4" (submit)="onSubmit($event)">
+          <form method="post" class="space-y-4" (submit)="onSubmit($event)">
             <div class="grid gap-2">
               <label ui-label for="signin-email">Email</label>
               <ui-input
@@ -160,7 +158,7 @@ export class UiAuthSignInComponent {
   readonly remember = signal(false)
 
   get rootClass(): string {
-    return cn('bg-background flex min-h-svh items-center justify-center p-6', this.className)
+    return cn('bg-background flex min-h-svh items-center justify-center p-4', this.className)
   }
 
   showsProvider(provider: AuthSignInOauthProvider): boolean {

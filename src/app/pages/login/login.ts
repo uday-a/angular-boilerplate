@@ -22,7 +22,7 @@ import { loginErrorMessage } from './login-errors'
   selector: 'app-login',
   imports: [LucideAngularModule, UiAuthSignInComponent, UiButtonComponent],
   template: `
-    <div class="bg-background relative flex min-h-svh items-center justify-center p-6 md:p-10">
+    <div class="bg-background relative flex min-h-svh items-center justify-center p-4 md:p-4">
       <div class="w-full max-w-sm">
         <ui-auth-sign-in
           forgotPasswordHref="/forgot-password"
@@ -39,9 +39,9 @@ import { loginErrorMessage } from './login-errors'
       @if (demoMode()) {
         <div class="fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">
           <div
-            class="bg-background/95 ring-border/60 flex items-center gap-3 rounded-full border px-4 py-2 shadow-lg backdrop-blur ring-1"
+            class="bg-background/95 flex items-center gap-3 rounded-full border px-4 py-2 shadow-lg backdrop-blur"
           >
-            <lucide-icon [img]="Sparkles" class="text-primary size-4" />
+            <lucide-icon [img]="Sparkles" class="text-primary size-4" aria-hidden="true" />
             <span class="text-muted-foreground text-sm"> Just looking around? Try the demo workspace. </span>
             <button
               ui-button
@@ -67,11 +67,10 @@ export class Login implements OnInit {
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
   private readonly publicConfig = inject(PUBLIC_CONFIG)
 
-  // Runtime demo flag from GET /api/config (mirrors Nuxt's
-  // runtimeConfig.public.demoMode). Read in ngOnInit (browser only) so SSR
-  // and the first client render agree (no hydration mismatch), then flips
-  // on when the server says demo mode is live.
-  protected readonly demoMode = signal(false)
+  // Runtime demo flag (Nuxt's runtimeConfig.public.demoMode): from the SSR
+  // context on the server and GET /api/config in the browser — same value,
+  // so the demo bar is in the server HTML (no pop-in).
+  protected readonly demoMode = signal(this.publicConfig.demoMode)
   protected readonly demoLoading = signal(false)
   protected readonly sending = signal(false)
 
@@ -82,11 +81,7 @@ export class Login implements OnInit {
   ngOnInit(): void {
     this.title.setTitle('Sign in')
     if (!this.browser) return
-    this.demoMode.set(this.publicConfig.demoMode)
-    // Already signed in? Skip the form.
-    this.auth.fetch().subscribe((user) => {
-      if (user) void this.router.navigateByUrl(this.next())
-    })
+    // Already signed in? guestGuard (+ the SSR auth redirect) skips the form.
     // Bounced magic-link / OAuth errors surface as a toast overlay.
     const banner = loginErrorMessage(this.route.snapshot.queryParamMap.get('error'))
     if (banner) toast.error(banner)

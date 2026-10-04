@@ -12,7 +12,6 @@ import {
   UiCardDescriptionComponent,
   UiCardFooterComponent,
   UiCardHeaderComponent,
-  UiCardTitleComponent,
 } from '@/app/components/ui/card/card.component'
 import { UiCheckboxComponent } from '@/app/components/ui/checkbox/checkbox.component'
 import { UiInputComponent } from '@/app/components/ui/input/input.component'
@@ -41,7 +40,6 @@ export interface AuthSignUpPayload {
     UiCardDescriptionComponent,
     UiCardFooterComponent,
     UiCardHeaderComponent,
-    UiCardTitleComponent,
     UiCheckboxComponent,
     UiInputComponent,
     UiLabelComponent,
@@ -51,11 +49,11 @@ export interface AuthSignUpPayload {
     <div data-slot="auth-sign-up" [class]="rootClass">
       <div ui-card class="w-full max-w-md">
         <div ui-card-header class="text-center">
-          <h2 ui-card-title class="text-2xl">{{ title }}</h2>
+          <h1 class="text-2xl leading-tight font-semibold tracking-tight">{{ title }}</h1>
           <p ui-card-description>{{ description }}</p>
         </div>
         <div ui-card-content>
-          <form class="space-y-4" (submit)="onSubmit($event)">
+          <form method="post" class="space-y-4" (submit)="onSubmit($event)">
             <div class="grid gap-2">
               <label ui-label for="signup-name">Full name</label>
               <ui-input
@@ -108,10 +106,13 @@ export interface AuthSignUpPayload {
             <div class="flex items-start gap-2">
               <ui-checkbox id="signup-accept" [checked]="accept()" (checkedChange)="accept.set(!!$event)" />
               <label ui-label for="signup-accept" class="text-sm leading-snug font-normal">
-                I agree to the
-                <a [href]="termsHref" class="text-foreground underline-offset-4 hover:underline">Terms of Service</a>
-                and
-                <a [href]="privacyHref" class="text-foreground underline-offset-4 hover:underline">Privacy Policy</a>.
+                <!-- One span: the label is flex, so bare text + links would lay out as columns at 375px. -->
+                <span>
+                  I agree to the
+                  <a [href]="termsHref" class="text-foreground underline-offset-4 hover:underline">Terms of Service</a>
+                  and
+                  <a [href]="privacyHref" class="text-foreground underline-offset-4 hover:underline">Privacy Policy</a>.
+                </span>
               </label>
             </div>
             <button ui-button type="submit" class="w-full" [disabled]="!canSubmit()">Create account</button>
@@ -169,8 +170,8 @@ export class UiAuthSignUpComponent {
   @Input() title = 'Create your account'
   @Input() description = 'Start your 14-day free trial. No credit card required.'
   @Input() signInHref = '/login'
-  @Input() termsHref = '#'
-  @Input() privacyHref = '#'
+  @Input() termsHref = '/terms'
+  @Input() privacyHref = '/privacy'
   @Input() oauthProviders: AuthSignUpOauthProvider[] = ['github', 'google']
   @Input('class') className?: string
 
@@ -189,7 +190,7 @@ export class UiAuthSignUpComponent {
   )
 
   get rootClass(): string {
-    return cn('bg-background flex min-h-svh items-center justify-center p-6', this.className)
+    return cn('bg-background flex min-h-svh items-center justify-center p-4', this.className)
   }
 
   showsProvider(provider: AuthSignUpOauthProvider): boolean {

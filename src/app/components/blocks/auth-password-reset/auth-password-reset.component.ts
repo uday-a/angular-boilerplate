@@ -41,6 +41,7 @@ export type AuthPasswordResetStage = 'request' | 'sent' | 'reset' | 'done'
   ],
   template: `
     <div data-slot="auth-password-reset" [class]="rootClass">
+      <h1 class="sr-only">Reset password</h1>
       <div ui-card class="w-full max-w-sm">
         @if (stage() === 'request') {
           <div ui-card-header class="text-center">
@@ -48,7 +49,7 @@ export type AuthPasswordResetStage = 'request' | 'sent' | 'reset' | 'done'
             <p ui-card-description>Enter your email and we&apos;ll send you a reset link.</p>
           </div>
           <div ui-card-content>
-            <form class="space-y-4" (submit)="submitRequest($event)">
+            <form method="post" class="space-y-4" (submit)="submitRequest($event)">
               <div class="grid gap-2">
                 <label ui-label for="reset-email">Email</label>
                 <ui-input
@@ -56,7 +57,9 @@ export type AuthPasswordResetStage = 'request' | 'sent' | 'reset' | 'done'
                   [value]="email()"
                   (valueChange)="email.set($event)"
                   type="email"
+                  name="email"
                   placeholder="you@company.com"
+                  autocomplete="email"
                   required
                 />
               </div>
@@ -99,7 +102,7 @@ export type AuthPasswordResetStage = 'request' | 'sent' | 'reset' | 'done'
             <p ui-card-description>Pick a strong password you haven&apos;t used before.</p>
           </div>
           <div ui-card-content>
-            <form class="space-y-4" (submit)="submitReset($event)">
+            <form method="post" class="space-y-4" (submit)="submitReset($event)">
               <div class="grid gap-2">
                 <label ui-label for="reset-pw">New password</label>
                 <ui-input
@@ -165,7 +168,7 @@ export class UiAuthPasswordResetComponent {
   readonly passwordsMatch = computed(() => !this.confirm() || this.password() === this.confirm())
 
   get rootClass(): string {
-    return cn('bg-background flex min-h-svh items-center justify-center p-6', this.className)
+    return cn('bg-background flex min-h-svh items-center justify-center p-4', this.className)
   }
 
   submitRequest(event: Event): void {

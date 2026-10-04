@@ -1,6 +1,6 @@
 // Pricing — mirrors nuxt-boilerplate `app/pages/pricing.vue` 1:1: header,
-// centred heading, the shared Pricing01 block (plans live in one place),
-// FAQ, footer. Subscribe bounces anonymous users to /login?next=/pricing,
+// the shared Pricing01 block in `page` mode (its heading is the H1; plans
+// live in one place), FAQ, footer. Subscribe bounces anonymous users to /login?next=/pricing,
 // else POSTs /api/billing/checkout and follows Polar's hosted URL.
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
@@ -29,15 +29,11 @@ interface CheckoutEnvelope {
     <div class="bg-background text-foreground min-h-screen">
       <ui-header-01 />
       <main>
-        <div class="mx-auto max-w-6xl px-6 py-16">
-          <header class="mx-auto max-w-2xl text-center">
-            <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">Pricing</h1>
-            <p class="text-muted-foreground mt-3 text-base">Start free. Upgrade when you outgrow it.</p>
-          </header>
-        </div>
-        <!-- Reuse the landing pricing block so plans live in one place. -->
+        <!-- Reuse the landing pricing block so plans live in one place;
+             "page" makes its heading the page H1. -->
         <section>
           <ui-pricing-01
+            page
             (subscribe)="onSubscribe($event)"
             (contactSales)="onContactSales()"
           />

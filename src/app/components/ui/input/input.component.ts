@@ -72,6 +72,7 @@ function optionalBool(v: unknown): boolean | undefined {
     '[attr.aria-label]': 'null',
     '[attr.aria-describedby]': 'null',
     '[attr.placeholder]': 'null',
+    '[attr.autocomplete]': 'null',
   },
   template: `
     @if (addonBefore) {
@@ -290,6 +291,11 @@ export class UiInputComponent implements ControlValueAccessor, AfterViewChecked 
   @Input() name?: string
   @Input() placeholder?: string
   @Input() autoComplete?: string
+  // Plain-HTML spelling (`autocomplete="email"`) — without it the attribute
+  // stayed on the host and never reached the native <input>.
+  @Input('autocomplete') set autocompleteAlias(v: string | undefined) {
+    this.autoComplete = v
+  }
   @Input() inputMode?: string
   @Input() pattern?: string
   @Input() min?: number | string

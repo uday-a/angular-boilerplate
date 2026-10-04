@@ -46,7 +46,7 @@ const STEPS = ['Profile', 'Workspace', 'Invite'] as const
   ],
   template: `
     <div class="bg-background text-foreground min-h-screen">
-      <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-12">
+      <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-4">
         <ol class="mb-6 flex items-center gap-3 text-xs">
           @for (label of steps; track label; let i = $index) {
             <li class="flex items-center gap-2">
@@ -67,9 +67,9 @@ const STEPS = ['Profile', 'Workspace', 'Invite'] as const
 
         <div ui-card>
           <div ui-card-header>
-            <h2
+            <h1
               ui-card-title
-              class="text-xl"
+              class="text-2xl"
             >
               @if (step() === 0) {
                 Tell us about you
@@ -78,7 +78,7 @@ const STEPS = ['Profile', 'Workspace', 'Invite'] as const
               } @else {
                 Invite your team
               }
-            </h2>
+            </h1>
             <p ui-card-description>
               @if (step() === 0) {
                 Helps us tailor the dashboard to your role.

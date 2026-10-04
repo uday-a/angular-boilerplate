@@ -50,7 +50,7 @@ interface InvitePreview {
         } @else if (invite() && !verifyFailed()) {
           <div ui-card>
             <div ui-card-header class="items-center text-center">
-              <h2 ui-card-title class="pt-3 text-xl">Join the workspace</h2>
+              <h1 ui-card-title class="pt-3 text-2xl">Join the workspace</h1>
               <p ui-card-description>Join the workspace as {{ invite()!.role }}.</p>
             </div>
             <div ui-card-content class="space-y-3">
@@ -89,7 +89,7 @@ interface InvitePreview {
         } @else if (needsSignin()) {
           <div ui-card>
             <div ui-card-header class="items-center text-center">
-              <h2 ui-card-title class="pt-3 text-xl">Sign in to accept this invite</h2>
+              <h1 ui-card-title class="pt-3 text-2xl">Sign in to accept this invite</h1>
               <p ui-card-description>Sign in to view this invite and join the workspace.</p>
             </div>
             <div ui-card-content class="flex flex-col gap-2">
@@ -102,7 +102,7 @@ interface InvitePreview {
         } @else {
           <div ui-card>
             <div ui-card-header class="items-center text-center">
-              <h2 ui-card-title class="pt-3 text-xl">Invite unavailable</h2>
+              <h1 ui-card-title class="pt-3 text-2xl">Invite unavailable</h1>
               <p ui-card-description>
                 This invite link is invalid, expired, or already used. Ask your admin for a new one.
               </p>

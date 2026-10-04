@@ -1,8 +1,8 @@
 // Sign-up — mirrors nuxt-boilerplate `app/pages/sign-up.vue` 1:1: email
 // signup is unwired (mock alert), GitHub OAuth is the real path.
+// Signed-in visitors are redirected by guestGuard (+ server/utils/auth-redirect.ts on SSR).
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
-import { Router } from '@angular/router'
 import { Title } from '@angular/platform-browser'
 import { AuthService } from '@/app/core/auth/auth.service'
 import {
@@ -25,16 +25,11 @@ import {
 })
 export class SignUp implements OnInit {
   private readonly auth = inject(AuthService)
-  private readonly router = inject(Router)
   private readonly title = inject(Title)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
 
   ngOnInit(): void {
     this.title.setTitle('Create an account')
-    if (!this.browser) return
-    this.auth.fetch().subscribe((user) => {
-      if (user) void this.router.navigateByUrl('/dashboard')
-    })
   }
 
   onSubmit(_payload: AuthSignUpPayload): void {

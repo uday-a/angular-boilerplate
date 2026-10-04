@@ -5,7 +5,7 @@
 // `subscribe` (plan, cycle) and `contactSales`; the consumer wires checkout.
 // Unbound outputs fall back to plain links (/sign-up, /login), like Next's
 // optional onSubscribe / onContactSales props.
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core'
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, booleanAttribute, signal } from '@angular/core'
 import { RouterLink } from '@angular/router'
 import { Check, LucideAngularModule, Sparkles } from 'lucide-angular'
 import { cn } from '@/app/core/utils/cn'
@@ -56,10 +56,14 @@ export interface Pricing01SubscribeEvent {
       data-slot="pricing-01"
       [class]="rootClass"
     >
-      <div class="mx-auto max-w-6xl px-6 py-24">
+      <div class="mx-auto max-w-6xl px-6" [class]="page ? 'py-4' : 'py-24'">
         <div class="mb-10 text-center">
-          <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Pricing</p>
-          <h2 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Plans for teams of every size</h2>
+          @if (page) {
+            <h1 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Plans for teams of every size</h1>
+          } @else {
+            <p class="text-muted-foreground text-xs font-medium tracking-wider uppercase">Pricing</p>
+            <h2 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Plans for teams of every size</h2>
+          }
           <p class="text-muted-foreground mx-auto mt-3 max-w-xl text-lg">
             No hidden fees. Cancel anytime. Save 20% with annual billing.
           </p>
@@ -246,6 +250,9 @@ export class UiPricing01Component {
   protected readonly Check = Check
   protected readonly Sparkles = Sparkles
 
+  // `page` renders the heading as the page's H1 (on /pricing) and drops the
+  // eyebrow, so the page has one heading hierarchy.
+  @Input({ transform: booleanAttribute }) page = false
   @Input('class') className?: string
 
   @Output() readonly subscribe = new EventEmitter<Pricing01SubscribeEvent>()

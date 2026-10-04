@@ -1,5 +1,6 @@
 // Two-step verification — mirrors nuxt-boilerplate `app/pages/mfa.vue` 1:1.
 // Mock-only: verify logs, continue navigates to the dashboard.
+// Signed-in visitors are redirected by guestGuard (+ server/utils/auth-redirect.ts on SSR).
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
 import { Router } from '@angular/router'
@@ -27,12 +28,6 @@ export class Mfa implements OnInit {
 
   ngOnInit(): void {
     this.title.setTitle('Two-step verification')
-    if (!this.browser) return
-    // MFA is part of the sign-in flow. Once a session exists, the user has
-    // already cleared the bar — bounce them to the dashboard.
-    this.auth.fetch().subscribe((user) => {
-      if (user) void this.router.navigateByUrl('/dashboard')
-    })
   }
 
   onVerify(code: string): void {

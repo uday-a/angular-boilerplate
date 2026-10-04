@@ -22,7 +22,6 @@ import {
   UiCardDescriptionComponent,
   UiCardFooterComponent,
   UiCardHeaderComponent,
-  UiCardTitleComponent,
 } from '@/app/components/ui/card/card.component'
 import {
   UiPinInputComponent,
@@ -44,7 +43,6 @@ import {
     UiCardDescriptionComponent,
     UiCardFooterComponent,
     UiCardHeaderComponent,
-    UiCardTitleComponent,
     UiPinInputComponent,
     UiPinInputGroupComponent,
     UiPinInputSlotComponent,
@@ -57,7 +55,7 @@ import {
             <div class="bg-primary/10 text-primary mx-auto mb-2 flex size-12 items-center justify-center rounded-full">
               <lucide-icon [img]="ShieldCheck" class="size-6" />
             </div>
-            <h2 ui-card-title class="text-2xl">{{ title }}</h2>
+            <h1 class="text-2xl leading-tight font-semibold tracking-tight">{{ title }}</h1>
             <p ui-card-description>{{ description }}</p>
           </div>
           <div ui-card-content class="space-y-4">
@@ -148,7 +146,7 @@ export class UiAuthMfaComponent {
   }
 
   get rootClass(): string {
-    return cn('bg-background flex min-h-svh items-center justify-center p-6', this.className)
+    return cn('bg-background flex min-h-svh items-center justify-center p-4', this.className)
   }
 
   onCodeChange(value: string): void {

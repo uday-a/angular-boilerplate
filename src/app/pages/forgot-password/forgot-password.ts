@@ -3,9 +3,9 @@
 // stage sends a magic-link; the /reset stage is inert (magic-link IS the
 // recovery). Errors surface via Sonner toast so the card's stage machine
 // stays intact for clean registry updates.
+// Signed-in visitors are redirected by guestGuard (+ server/utils/auth-redirect.ts on SSR).
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core'
 import { isPlatformBrowser } from '@angular/common'
-import { Router } from '@angular/router'
 import { Title } from '@angular/platform-browser'
 import { AuthService } from '@/app/core/auth/auth.service'
 import { UiAuthPasswordResetComponent } from '@/app/components/blocks/auth-password-reset'
@@ -24,17 +24,11 @@ import { toast } from '@/app/components/ui/sonner'
 })
 export class ForgotPassword implements OnInit {
   private readonly auth = inject(AuthService)
-  private readonly router = inject(Router)
   private readonly title = inject(Title)
   private readonly browser = isPlatformBrowser(inject(PLATFORM_ID))
 
   ngOnInit(): void {
     this.title.setTitle('Sign-in link')
-    if (!this.browser) return
-    // Already signed in? Skip the form — they don't need to reset.
-    this.auth.fetch().subscribe((user) => {
-      if (user) void this.router.navigateByUrl('/dashboard')
-    })
   }
 
   onRequest(email: string): void {
