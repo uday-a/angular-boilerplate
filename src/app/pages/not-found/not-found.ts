@@ -1,7 +1,7 @@
 // 404 — designed "Page not found" with recovery links. Unknown URLs land
 // here instead of silently bouncing to the marketing page, so a mistyped
 // deep link is diagnosable rather than confusing.
-import { Component, inject } from '@angular/core'
+import { Component, RESPONSE_INIT, inject } from '@angular/core'
 import { Title } from '@angular/platform-browser'
 import { RouterLink } from '@angular/router'
 import { FileQuestion, LucideAngularModule } from 'lucide-angular'
@@ -29,5 +29,8 @@ export class NotFound {
 
   constructor() {
     inject(Title).setTitle('Page not found')
+    // Real 404 status on SSR so crawlers don't index unknown URLs (null in the browser).
+    const init = inject(RESPONSE_INIT, { optional: true })
+    if (init) init.status = 404
   }
 }

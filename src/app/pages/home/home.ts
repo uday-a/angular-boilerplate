@@ -2,7 +2,7 @@
 // Header + Hero/Logos/Features/Bento/Pricing/Testimonials/Faq/Contact/Cta
 // sections (each scroll-margined for anchor links) + Footer.
 import { Component, OnInit, inject } from '@angular/core'
-import { Meta, Title } from '@angular/platform-browser'
+import { Title } from '@angular/platform-browser'
 import { UiHeader01Component } from '@/app/components/blocks/header-01'
 import { UiHero01Component } from '@/app/components/blocks/hero-01'
 import { UiLogos01Component } from '@/app/components/blocks/logos-01'
@@ -78,14 +78,8 @@ import { UiFooter01Component } from '@/app/components/blocks/footer-01'
 })
 export class Home implements OnInit {
   private readonly title = inject(Title)
-  private readonly meta = inject(Meta)
 
   ngOnInit(): void {
     this.title.setTitle('The workspace your team will actually use')
-    this.meta.updateTag({
-      name: 'description',
-      content:
-        'A 100% UIPKGE-registry-driven Angular 20 boilerplate. Every UI surface ships from the registry; you own every line.',
-    })
   }
 }
