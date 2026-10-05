@@ -1,5 +1,5 @@
-// Boilerplate contact section: info column (email/phone/office + map
-// placeholder) + message card with sent confirmation state.
+// Boilerplate contact section: info column (email/phone/office + Leaflet
+// office map) + message card with sent confirmation state.
 // Port of nuxt-boilerplate/app/components/blocks/Contact01.vue 1:1 —
 // emits `submit` with the form payload; the consumer wires delivery.
 import {
@@ -13,6 +13,12 @@ import {
 } from '@angular/core'
 import { CheckCircle2, LucideAngularModule, Mail, MapPin, Phone, Send } from 'lucide-angular'
 import { cn } from '@/app/core/utils/cn'
+import { kindDotClass } from '@/app/core/dashboard/locations'
+import {
+  UiLeafletMapComponent,
+  UiLeafletMarkerComponent,
+  UiLeafletPopupComponent,
+} from '@/app/components/ui/leaflet-map'
 import { UiButtonComponent } from '@/app/components/ui/button/button.component'
 import {
   UiCardComponent,
@@ -55,6 +61,9 @@ export interface Contact01SubmitPayload {
     UiCardTitleComponent,
     UiInputComponent,
     UiLabelComponent,
+    UiLeafletMapComponent,
+    UiLeafletMarkerComponent,
+    UiLeafletPopupComponent,
     UiSelectComponent,
     UiSelectContentComponent,
     UiSelectItemComponent,
@@ -106,13 +115,41 @@ export interface Contact01SubmitPayload {
                 </div>
                 <div>
                   <p class="text-muted-foreground text-xs uppercase">Office</p>
-                  <p class="text-sm font-medium">120 Howard St, San Francisco</p>
+                  <p class="text-sm font-medium">One Apple Park Way, Cupertino, CA 95014</p>
                 </div>
               </div>
             </div>
 
-            <div class="bg-muted/40 mt-6 flex h-48 items-center justify-center rounded-lg border border-dashed">
-              <p class="text-muted-foreground text-sm">Map placeholder</p>
+            <!-- Office map: browser-only (@defer never renders on the server),
+                 so Leaflet stays out of SSR and out of the initial bundle. -->
+            <div
+              role="region"
+              aria-label="Map showing Apple Park in Cupertino"
+              class="bg-muted/40 mt-6 h-48 overflow-hidden rounded-lg border border-dashed"
+            >
+              @defer (on viewport) {
+                <ui-leaflet-map
+                  variant="muted"
+                  [center]="officeLngLat"
+                  [zoom]="14"
+                  [scrollWheelZoom]="false"
+                  class="size-full"
+                >
+                  <ui-leaflet-marker [lngLat]="officeLngLat" anchor="center">
+                    <span class="relative flex items-center justify-center">
+                      <span class="bg-primary absolute inset-0 rounded-full opacity-40 motion-safe:animate-ping" aria-hidden="true"></span>
+                      <span [class]="markerDotClass"></span>
+                    </span>
+                    <ui-leaflet-popup [offset]="[0, -10]">
+                      <!-- Divs, not <p>: Leaflet's stylesheet gives popup paragraphs 17px margins. -->
+                      <div class="text-sm font-semibold">Apple Park</div>
+                      <div class="text-muted-foreground text-xs">One Apple Park Way, Cupertino, CA</div>
+                    </ui-leaflet-popup>
+                  </ui-leaflet-marker>
+                </ui-leaflet-map>
+              } @placeholder {
+                <div class="size-full"></div>
+              }
             </div>
           </div>
 
@@ -233,6 +270,11 @@ export class UiContact01Component {
   protected readonly MapPin = MapPin
   protected readonly Phone = Phone
   protected readonly Send = Send
+
+  /** Apple Park, Cupertino — [lng, lat] (ui-leaflet-map's coordinate order). */
+  protected readonly officeLngLat: [number, number] = [-122.009, 37.3349]
+  /** Same dot as the Locations page HQ marker (size-5 = HQ headcount tier). */
+  protected readonly markerDotClass = cn('outline-background relative block size-5 rounded-full ring-4 outline-2', kindDotClass('hq'))
 
   @Input('class') className?: string
 
