@@ -84,6 +84,7 @@ export class UiSparklineComponent implements AfterViewInit, OnChanges, OnDestroy
       showSymbol: this.variant === 'dots',
       endLabel: { show: false },
       lineStyle: { width: this.variant === 'area' ? 1.75 : 2, color },
+      itemStyle: { color, borderColor: color, borderWidth: 0 },
       data:
         this.variant === 'area'
           ? this.data.map((v, i) => ({
